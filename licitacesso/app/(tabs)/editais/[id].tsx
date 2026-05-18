@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Linking,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -15,13 +14,33 @@ import { useBidDetailViewModel } from '../../../src/presentation/viewmodels';
 
 export default function EditalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { bid, loading } = useBidDetailViewModel(id ?? '');
+  const { bid, loading, error, retry } = useBidDetailViewModel(id ?? '');
   const insets = useSafeAreaInsets();
 
-  if (loading || !bid) {
+  if (loading) {
     return (
       <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
         <Text style={styles.loadingText}>Carregando edital...</Text>
+      </View>
+    );
+  }
+
+  if (error || !bid) {
+    return (
+      <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
+        <Feather name="alert-circle" size={44} color={colors.danger} />
+        <Text style={styles.errorTitle}>{error ?? 'Edital não encontrado.'}</Text>
+        <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+          {error && (
+            <TouchableOpacity onPress={retry} style={styles.retryButton} activeOpacity={0.8}>
+              <Feather name="refresh-cw" size={16} color="#fff" />
+              <Text style={styles.retryText}>Tentar novamente</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={() => router.back()} style={styles.backTextButton} activeOpacity={0.8}>
+            <Text style={styles.backTextButtonLabel}>Voltar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -30,6 +49,8 @@ export default function EditalDetailScreen() {
     style: 'currency',
     currency: 'BRL',
   }).format(bid.estimatedValue);
+
+  const requirements = bid.requirements ?? [];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -79,18 +100,18 @@ export default function EditalDetailScreen() {
           {/* O que preciso */}
           <View style={[styles.card, { borderLeftWidth: 4, borderLeftColor: colors.green }]}>
             <Text style={styles.cardTitle}>O que preciso fazer?</Text>
-            <View style={styles.requirementList}>
-              <View style={styles.requirementItem}>
-                <Feather name="check-circle" size={18} color={colors.green} />
-                <Text style={styles.requirementText}>Ter MEI ativo com CNAE compatível.</Text>
+            {requirements.length > 0 ? (
+              <View style={styles.requirementList}>
+                {requirements.map((req, index) => (
+                  <View key={index} style={styles.requirementItem}>
+                    <Feather name="check-circle" size={18} color={colors.green} />
+                    <Text style={styles.requirementText}>{req}</Text>
+                  </View>
+                ))}
               </View>
-              <View style={styles.requirementItem}>
-                <Feather name="check-circle" size={18} color={colors.green} />
-                <Text style={styles.requirementText}>
-                  Apresentar Certidão Negativa (nós ajudamos).
-                </Text>
-              </View>
-            </View>
+            ) : (
+              <Text style={styles.cardBody}>Consulte o edital completo para mais detalhes.</Text>
+            )}
           </View>
 
           {/* Prazo */}
@@ -101,10 +122,12 @@ export default function EditalDetailScreen() {
                 <Text style={styles.deadlineLabel}>DATA LIMITE</Text>
                 <Text style={styles.deadlineValue}>{bid.deadline}</Text>
               </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.deadlineLabel}>HORÁRIO</Text>
-                <Text style={styles.deadlineValue}>14:00h</Text>
-              </View>
+              {bid.deadlineTime && (
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.deadlineLabel}>HORÁRIO</Text>
+                  <Text style={styles.deadlineValue}>{bid.deadlineTime}</Text>
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -129,8 +152,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 12,
   },
   loadingText: { color: colors.textMuted, fontSize: 16 },
+  errorTitle: { fontSize: 16, fontWeight: '600', color: colors.text, textAlign: 'center', paddingHorizontal: 32 },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.accent,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  backTextButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  backTextButtonLabel: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
   container: { paddingHorizontal: 20, gap: 20 },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   backButton: {

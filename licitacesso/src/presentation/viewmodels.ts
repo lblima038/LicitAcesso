@@ -30,38 +30,52 @@ export function useEditaisViewModel() {
   const [bids, setBids] = useState<Bid[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadBids() {
+  async function loadBids() {
+    setLoading(true);
+    setError(null);
+    try {
       const allBids = await bidRepo.getAvailableBids();
       setBids(allBids);
+    } catch {
+      setError('Não foi possível carregar as oportunidades.');
+    } finally {
       setLoading(false);
     }
-    loadBids();
-  }, []);
+  }
+
+  useEffect(() => { loadBids(); }, []);
 
   const filteredBids = bids.filter(bid =>
     bid.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     bid.organization.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  return { filteredBids, searchQuery, setSearchQuery, loading };
+  return { filteredBids, searchQuery, setSearchQuery, loading, error, retry: loadBids };
 }
 
 export function useBidDetailViewModel(id: string) {
   const [bid, setBid] = useState<Bid | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadBid() {
+  async function loadBid() {
+    setLoading(true);
+    setError(null);
+    try {
       const details = await bidRepo.getBidDetails(id);
       setBid(details);
+    } catch {
+      setError('Não foi possível carregar o edital.');
+    } finally {
       setLoading(false);
     }
-    loadBid();
-  }, [id]);
+  }
 
-  return { bid, loading };
+  useEffect(() => { loadBid(); }, [id]);
+
+  return { bid, loading, error, retry: loadBid };
 }
 
 export function useChecklistViewModel(bidId: string) {

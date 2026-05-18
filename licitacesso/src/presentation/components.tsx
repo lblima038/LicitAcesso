@@ -2,7 +2,7 @@
  * presentation/components.tsx
  * Componentes reutilizáveis — versão React Native do LicitAcesso.
  */
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   StyleSheet,
   ViewStyle,
   TextStyle,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -171,6 +172,55 @@ export function BidCard({ bid }: { bid: Bid }) {
   );
 }
 
+// ─── EmptyState ───────────────────────────────────────────────────────────────
+interface EmptyStateProps {
+  title: string;
+  subtitle: string;
+  iconName?: keyof typeof Feather.glyphMap;
+}
+
+export function EmptyState({ title, subtitle, iconName = 'search' }: EmptyStateProps) {
+  return (
+    <View style={styles.emptyContainer}>
+      <View style={styles.emptyIconWrapper}>
+        <Feather name={iconName} size={36} color={colors.border} />
+      </View>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptySubtitle}>{subtitle}</Text>
+    </View>
+  );
+}
+
+// ─── BidCardSkeleton ──────────────────────────────────────────────────────────
+export function BidCardSkeleton() {
+  const anim = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View style={[styles.bidCard, { opacity: anim, marginBottom: 16 }]}>
+      <View style={[styles.skeletonBlock, { height: 160 }]} />
+      <View style={{ padding: 16, gap: 10 }}>
+        <View style={[styles.skeletonBlock, { height: 12, width: '40%', borderRadius: 6 }]} />
+        <View style={[styles.skeletonBlock, { height: 18, width: '80%', borderRadius: 6 }]} />
+        <View style={[styles.skeletonBlock, { height: 14, width: '95%', borderRadius: 6 }]} />
+        <View style={[styles.skeletonBlock, { height: 14, width: '70%', borderRadius: 6 }]} />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+          <View style={[styles.skeletonBlock, { height: 24, width: '35%', borderRadius: 6 }]} />
+          <View style={[styles.skeletonBlock, { height: 36, width: '30%', borderRadius: 12 }]} />
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
+
 // ─── BottomTabBar ─────────────────────────────────────────────────────────────
 const tabItems = [
   { route: '/(tabs)/dashboard', icon: 'home' as const, label: 'Início' },
@@ -320,6 +370,26 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   bidValue: { fontSize: 20, fontWeight: '800', color: colors.accent },
+  // EmptyState
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: 12,
+  },
+  emptyIconWrapper: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  emptySubtitle: { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 22, paddingHorizontal: 20 },
+  // BidCardSkeleton
+  skeletonBlock: { backgroundColor: colors.border, borderRadius: 12 },
   // TopBar
   topBar: {
     flexDirection: 'row',

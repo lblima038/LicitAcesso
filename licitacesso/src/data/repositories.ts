@@ -10,9 +10,15 @@ export class MockBidRepository implements IBidRepository {
       organization: 'Prefeitura de SP',
       estimatedValue: 45000,
       deadline: '22 de Outubro',
+      deadlineTime: '14:00h',
       location: 'São Paulo, SP',
       category: 'Serviços',
       matchPercentage: 98,
+      requirements: [
+        'Ter MEI ativo com CNAE compatível.',
+        'Apresentar Certidão Negativa (nós ajudamos).',
+        'Comprovante de endereço da empresa.',
+      ],
     },
     {
       id: '2',
@@ -21,9 +27,15 @@ export class MockBidRepository implements IBidRepository {
       organization: 'Prefeitura de Osasco',
       estimatedValue: 12800,
       deadline: '15 de Novembro',
+      deadlineTime: '17:00h',
       location: 'Osasco, SP',
       category: 'Obras',
       isUrgent: true,
+      requirements: [
+        'MEI ativo na categoria de construção civil.',
+        'Apresentar CCMEI atualizado.',
+        'Certidão Negativa de Débitos (CND).',
+      ],
     },
     {
       id: '3',
@@ -32,8 +44,13 @@ export class MockBidRepository implements IBidRepository {
       organization: 'Prefeitura de Santo André',
       estimatedValue: 5400,
       deadline: '22 de Outubro',
+      deadlineTime: '12:00h',
       location: 'Santo André, SP',
       category: 'Papelaria',
+      requirements: [
+        'MEI ativo no ramo de comércio.',
+        'Nota fiscal de produto similar emitida nos últimos 12 meses.',
+      ],
     },
   ];
 

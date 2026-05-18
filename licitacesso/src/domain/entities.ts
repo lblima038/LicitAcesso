@@ -10,10 +10,12 @@ export interface Bid {
   organization: string;
   estimatedValue: number;
   deadline: string;
+  deadlineTime?: string;
   location: string;
   category: string;
   matchPercentage?: number;
   isUrgent?: boolean;
+  requirements?: string[];
 }
 
 export interface User {
