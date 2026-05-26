@@ -1,23 +1,64 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
-  Linking,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { colors, Button } from '../src/presentation/components';
+import { signInWithGoogle, statusCodes } from '../src/data/authService';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
+  const [loading, setLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+
+      const authUser = await signInWithGoogle();
+
+      if (API_BASE_URL) {
+        const response = await fetch(`${API_BASE_URL}/auth/google`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            idToken: authUser.firebaseIdToken,
+            name: authUser.name,
+            email: authUser.email,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erro do servidor: ${response.status}`);
+        }
+      }
+
+      router.replace('/(tabs)/dashboard');
+    } catch (error: unknown) {
+      const e = error as { type?: string; code?: string };
+      if (e?.type === 'cancelled') return;
+      if (e?.code === statusCodes.IN_PROGRESS) return;
+      if (e?.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Erro', 'Google Play Services não disponível neste dispositivo.');
+        return;
+      }
+      Alert.alert('Erro no login', 'Não foi possível entrar com Google. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {/* Hero section */}
       <ImageBackground
         source={{ uri: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1400&auto=format&fit=crop' }}
         style={styles.hero}
@@ -35,7 +76,6 @@ export default function OnboardingScreen() {
         </View>
       </ImageBackground>
 
-      {/* Login section */}
       <View style={[styles.loginSection, { paddingBottom: insets.bottom + 24 }]}>
         <Text style={styles.welcomeTitle}>Bem-vindo</Text>
         <Text style={styles.welcomeSubtitle}>
@@ -44,15 +84,19 @@ export default function OnboardingScreen() {
 
         <View style={styles.buttonGroup}>
           <Button
-            variant="primary"
-            style={styles.loginButton}
-            onPress={() => router.replace('/(tabs)/dashboard')}
+            variant="outline"
+            style={styles.googleButton}
+            onPress={handleGoogleSignIn}
+            disabled={loading}
           >
-            <View style={styles.loginIconWrapper}>
-              <Text style={{ fontSize: 14 }}>🏛️</Text>
-            </View>
-            <Text style={styles.loginButtonText}>Entre com Gov.br</Text>
-            <Feather name="arrow-right" size={18} color="#fff" style={{ marginLeft: 'auto' }} />
+            {loading ? (
+              <ActivityIndicator size="small" color={colors.text} />
+            ) : (
+              <Feather name="chrome" size={20} color={colors.text} />
+            )}
+            <Text style={styles.googleButtonText}>
+              {loading ? 'Entrando...' : 'Entrar com Google'}
+            </Text>
           </Button>
 
           <Button
@@ -68,7 +112,6 @@ export default function OnboardingScreen() {
           </Button>
         </View>
 
-        {/* Support card */}
         <View style={styles.supportCard}>
           <View style={styles.supportIconWrapper}>
             <Feather name="help-circle" size={22} color={colors.orangeDark} />
@@ -97,10 +140,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     backgroundColor: colors.primary,
   },
-  heroContent: {
-    padding: 28,
-    gap: 12,
-  },
+  heroContent: { padding: 28, gap: 12 },
   badge: {
     backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 14,
@@ -118,12 +158,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     letterSpacing: -1,
   },
-  heroSubtitle: {
-    fontSize: 16,
-    color: '#bfdbfe',
-    fontWeight: '500',
-    lineHeight: 24,
-  },
+  heroSubtitle: { fontSize: 16, color: '#bfdbfe', fontWeight: '500', lineHeight: 24 },
   heroDivider: {
     width: 48,
     height: 4,
@@ -142,6 +177,16 @@ const styles = StyleSheet.create({
   welcomeTitle: { fontSize: 28, fontWeight: '800', color: colors.primary },
   welcomeSubtitle: { fontSize: 14, color: colors.textMuted, lineHeight: 22 },
   buttonGroup: { gap: 14, marginTop: 8 },
+  googleButton: {
+    width: '100%',
+    height: 52,
+    borderRadius: 99,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  googleButtonText: { fontSize: 15, fontWeight: '700', color: colors.text },
   loginButton: {
     width: '100%',
     paddingVertical: 16,
@@ -158,11 +203,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  loginButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
+  loginButtonText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   supportCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',

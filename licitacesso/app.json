@@ -10,14 +10,16 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "br.com.licitacesso.app"
+      "bundleIdentifier": "br.com.licitacesso.app",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#003d9b"
       },
-      "package": "br.com.licitacesso.app"
+      "package": "br.com.licitacesso.app",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -26,7 +28,21 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.386479303029-o797r5u4nt3ikqss0jcltf8upmkhqsfs"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": { "useFrameworks": "static" }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
