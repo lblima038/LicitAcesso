@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -27,16 +27,17 @@ const FILTER_OPTIONS = [
 ];
 
 export default function EditaisScreen() {
-  const { filteredBids, searchQuery, setSearchQuery, loading, error, retry } =
-    useEditaisViewModel();
-  const [activeFilter, setActiveFilter] = useState('all');
+  const {
+    filteredBids,
+    searchQuery,
+    setSearchQuery,
+    activeFilter,
+    setActiveFilter,
+    loading,
+    error,
+    retry,
+  } = useEditaisViewModel();
   const insets = useSafeAreaInsets();
-
-  const displayedBids = filteredBids.filter(bid => {
-    if (activeFilter === 'all') return true;
-    if (activeFilter === 'urgent') return bid.isUrgent === true;
-    return bid.category.toLowerCase() === activeFilter;
-  });
 
   return (
     <ScreenLayout>
@@ -121,7 +122,7 @@ export default function EditaisScreen() {
               <Text style={styles.retryText}>Tentar novamente</Text>
             </TouchableOpacity>
           </View>
-        ) : displayedBids.length === 0 ? (
+        ) : filteredBids.length === 0 ? (
           <EmptyState
             title="Nenhuma oportunidade encontrada"
             subtitle={
@@ -131,7 +132,7 @@ export default function EditaisScreen() {
             }
           />
         ) : (
-          displayedBids.map(bid => <BidCard key={bid.id} bid={bid} />)
+          filteredBids.map(bid => <BidCard key={bid.id} bid={bid} />)
         )}
       </ScrollView>
     </ScreenLayout>

@@ -11,7 +11,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "br.com.licitacesso.app",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -40,7 +43,9 @@
       [
         "expo-build-properties",
         {
-          "ios": { "useFrameworks": "static" }
+          "ios": {
+            "useFrameworks": "static"
+          }
         }
       ]
     ],
@@ -49,6 +54,12 @@
     },
     "splash": {
       "backgroundColor": "#003d9b"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "55d5b137-6562-4ad2-9552-c85034c16a72"
+      }
     }
   }
 }

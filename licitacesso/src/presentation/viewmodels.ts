@@ -1,43 +1,66 @@
 import { useState, useEffect } from 'react';
-import { Bid, User, BidDocument } from '../domain/entities';
-import { MockBidRepository, MockUserRepository } from '../data/repositories';
+import { Bid } from '../domain/entities';
+import {
+  bidCache,
+  fetchPorEstado,
+  fetchPorAreaServico,
+  mapEstadoToBid,
+  mapAreaToBid,
+} from '../data/apiService';
+import { MockUserRepository } from '../data/repositories';
 
-const bidRepo = new MockBidRepository();
 const userRepo = new MockUserRepository();
 
+// ─── Mapeamento de filtro → chamada de API ────────────────────────────────────
+
+async function loadBidsByFilter(filter: string): Promise<Bid[]> {
+  switch (filter) {
+    case 'obras':
+      return (await fetchPorAreaServico('Construção Civil')).map(mapAreaToBid);
+    case 'papelaria':
+      return (await fetchPorAreaServico('Compras')).map(mapAreaToBid);
+    default:
+      // 'all', 'nearby', 'urgent' — carrega por estado
+      return (await fetchPorEstado()).map(mapEstadoToBid);
+  }
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
 export function useDashboardViewModel() {
-  const [user, setUser] = useState<User | null>(null);
   const [recommendedBids, setRecommendedBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadData() {
-      const [currentUser, recommendations] = await Promise.all([
-        userRepo.getCurrentUser(),
-        bidRepo.getRecommendedBids(),
-      ]);
-      setUser(currentUser);
-      setRecommendedBids(recommendations);
-      setLoading(false);
-    }
-    loadData();
+    fetchPorEstado()
+      .then(items => {
+        const sorted = [...items].sort((a, b) => b.valor_total - a.valor_total);
+        const bids = sorted.slice(0, 3).map(mapEstadoToBid);
+        bids.forEach(b => bidCache.set(b.id, b));
+        setRecommendedBids(bids);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  return { user, recommendedBids, loading };
+  return { user: null, recommendedBids, loading };
 }
+
+// ─── Editais (lista) ──────────────────────────────────────────────────────────
 
 export function useEditaisViewModel() {
   const [bids, setBids] = useState<Bid[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilterState] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadBids() {
+  async function loadBids(filter: string) {
     setLoading(true);
     setError(null);
     try {
-      const allBids = await bidRepo.getAvailableBids();
-      setBids(allBids);
+      const loaded = await loadBidsByFilter(filter);
+      loaded.forEach(b => bidCache.set(b.id, b));
+      setBids(loaded);
     } catch {
       setError('Não foi possível carregar as oportunidades.');
     } finally {
@@ -45,15 +68,35 @@ export function useEditaisViewModel() {
     }
   }
 
-  useEffect(() => { loadBids(); }, []);
+  function setActiveFilter(f: string) {
+    setActiveFilterState(f);
+    loadBids(f);
+  }
 
-  const filteredBids = bids.filter(bid =>
-    bid.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    bid.organization.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => { loadBids('all'); }, []);
 
-  return { filteredBids, searchQuery, setSearchQuery, loading, error, retry: loadBids };
+  const filteredBids = bids.filter(bid => {
+    if (activeFilter === 'urgent') return (bid.estimatedValue ?? 0) > 500_000;
+    const q = searchQuery.toLowerCase();
+    return (
+      bid.title.toLowerCase().includes(q) ||
+      bid.organization.toLowerCase().includes(q)
+    );
+  });
+
+  return {
+    filteredBids,
+    searchQuery,
+    setSearchQuery,
+    activeFilter,
+    setActiveFilter,
+    loading,
+    error,
+    retry: () => loadBids(activeFilter),
+  };
 }
+
+// ─── Detalhe do edital ────────────────────────────────────────────────────────
 
 export function useBidDetailViewModel(id: string) {
   const [bid, setBid] = useState<Bid | null>(null);
@@ -64,8 +107,16 @@ export function useBidDetailViewModel(id: string) {
     setLoading(true);
     setError(null);
     try {
-      const details = await bidRepo.getBidDetails(id);
-      setBid(details);
+      // Tenta o cache primeiro; se vazio, busca por estado
+      let found = bidCache.get(id) ?? null;
+      if (!found) {
+        // id pode ser uma UF (ex: "SP") ou um id de área
+        const items = await fetchPorEstado(id.length === 2 ? id : undefined);
+        const bids = items.map(mapEstadoToBid);
+        bids.forEach(b => bidCache.set(b.id, b));
+        found = bidCache.get(id) ?? null;
+      }
+      setBid(found);
     } catch {
       setError('Não foi possível carregar o edital.');
     } finally {
@@ -78,17 +129,17 @@ export function useBidDetailViewModel(id: string) {
   return { bid, loading, error, retry: loadBid };
 }
 
+// ─── Checklist ────────────────────────────────────────────────────────────────
+
 export function useChecklistViewModel(bidId: string) {
-  const [documents, setDocuments] = useState<BidDocument[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadDocs() {
-      const docs = await userRepo.getDocumentsForBid(bidId);
+    userRepo.getDocumentsForBid(bidId).then(docs => {
       setDocuments(docs);
       setLoading(false);
-    }
-    loadDocs();
+    });
   }, [bidId]);
 
   const progress =
