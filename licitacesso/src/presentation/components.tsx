@@ -297,6 +297,136 @@ export function ScreenLayout({ children }: ScreenLayoutProps) {
   );
 }
 
+// ─── EditalCard ───────────────────────────────────────────────────────────────
+interface EditalItem {
+  ano_compra: number;
+  data_publicacao_pncp: string;
+  modalidade_nome: string;
+  municipio_nome: string;
+  objeto_compra: string;
+  ramo_mei: string;
+  valor_total_estimado: number;
+  situacao_nome: string;
+}
+
+export function EditalCard({ item, onPress }: { item: EditalItem; onPress?: () => void }) {
+  const dataFmt = (() => {
+    try {
+      return new Date(item.data_publicacao_pncp).toLocaleDateString('pt-BR', {
+        day: '2-digit', month: 'short', year: 'numeric',
+      });
+    } catch {
+      return item.data_publicacao_pncp;
+    }
+  })();
+
+  return (
+    <TouchableOpacity
+      style={styles.editalCard}
+      onPress={onPress}
+      activeOpacity={onPress ? 0.75 : 1}
+    >
+      <View style={styles.editalCardHeader}>
+        <View style={styles.editalSituacaoBadge}>
+          <Text style={styles.editalSituacaoText}>{item.situacao_nome ?? '—'}</Text>
+        </View>
+        <Text style={styles.editalData}>{dataFmt}</Text>
+      </View>
+      <Text style={styles.editalObjeto} numberOfLines={3}>{item.objeto_compra}</Text>
+      <View style={styles.editalMeta}>
+        <View style={styles.editalMetaItem}>
+          <Feather name="map-pin" size={11} color={colors.textMuted} />
+          <Text style={styles.editalMetaText}>{item.municipio_nome}</Text>
+        </View>
+        <View style={styles.editalMetaItem}>
+          <Feather name="layers" size={11} color={colors.textMuted} />
+          <Text style={styles.editalMetaText}>{item.modalidade_nome}</Text>
+        </View>
+      </View>
+      <View style={styles.editalFooter}>
+        <Text style={styles.editalRamo}>{item.ramo_mei}</Text>
+        <Text style={styles.editalValor}>
+          {item.valor_total_estimado != null
+            ? item.valor_total_estimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+            : 'Não informado'}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── formatBRL ────────────────────────────────────────────────────────────────
+export function formatBRL(value: number): string {
+  if (value >= 1_000_000_000) return `R$ ${(value / 1_000_000_000).toFixed(1)}B`;
+  if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `R$ ${(value / 1_000).toFixed(0)}K`;
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+// ─── EstadoCard ───────────────────────────────────────────────────────────────
+interface EstadoItem {
+  uf: string;
+  total_contratacoes: number;
+  valor_total: number;
+  orgaos_distintos: number;
+}
+
+export function EstadoCard({ item, maxValor, rank }: { item: EstadoItem; maxValor: number; rank: number }) {
+  const pct = maxValor > 0 ? item.valor_total / maxValor : 0;
+  return (
+    <View style={styles.rankCard}>
+      <View style={styles.rankBadge}>
+        <Text style={styles.rankNum}>#{rank}</Text>
+      </View>
+      <View style={{ flex: 1, gap: 6 }}>
+        <View style={styles.rankRow}>
+          <Text style={styles.rankTitle}>{item.uf}</Text>
+          <Text style={styles.rankValue}>{formatBRL(item.valor_total)}</Text>
+        </View>
+        <View style={styles.rankBarBg}>
+          <View style={{ flexGrow: pct, height: 6, backgroundColor: colors.accent, borderRadius: 3 }} />
+          <View style={{ flexGrow: Math.max(1 - pct, 0), height: 6 }} />
+        </View>
+        <Text style={styles.rankSub}>
+          {item.total_contratacoes.toLocaleString('pt-BR')} licitações · {item.orgaos_distintos} órgãos
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+// ─── AreaCard ─────────────────────────────────────────────────────────────────
+interface AreaItem {
+  ramo_mei: string;
+  total_contratacoes: number;
+  valor_total: number;
+  orgaos_distintos: number;
+}
+
+export function AreaCard({ item, maxValor, rank }: { item: AreaItem; maxValor: number; rank: number }) {
+  const pct = maxValor > 0 ? item.valor_total / maxValor : 0;
+  return (
+    <View style={styles.rankCard}>
+      <View style={[styles.rankBadge, { backgroundColor: '#d1fae5' }]}>
+        <Text style={[styles.rankNum, { color: colors.green }]}>#{rank}</Text>
+      </View>
+      <View style={{ flex: 1, gap: 6 }}>
+        <View style={styles.rankRow}>
+          <Text style={[styles.rankTitle, { flex: 1, flexWrap: 'wrap' }]}>{item.ramo_mei}</Text>
+          <Text style={styles.rankValue}>{formatBRL(item.valor_total)}</Text>
+        </View>
+        <View style={styles.rankBarBg}>
+          <View style={{ flexGrow: pct, height: 6, backgroundColor: colors.green, borderRadius: 3 }} />
+          <View style={{ flexGrow: Math.max(1 - pct, 0), height: 6 }} />
+        </View>
+        <Text style={styles.rankSub}>
+          {item.total_contratacoes.toLocaleString('pt-BR')} licitações · {item.orgaos_distintos} órgãos
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   // Button
@@ -458,5 +588,121 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     color: `${colors.primary}80`,
+  },
+  // EditalCard
+  editalCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  editalCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  editalSituacaoBadge: {
+    backgroundColor: '#d1fae5',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  editalSituacaoText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.green,
+  },
+  editalData: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  editalObjeto: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+    lineHeight: 22,
+  },
+  editalMeta: {
+    flexDirection: 'row',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  editalMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  editalMetaText: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  editalFooter: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  editalRamo: {
+    fontSize: 11,
+    color: colors.textMuted,
+    flex: 1,
+  },
+  editalValor: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.accent,
+  },
+  // RankCard (EstadoCard / AreaCard)
+  rankCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  rankBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rankNum: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.accent,
+  },
+  rankRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  rankTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  rankValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.accent,
+  },
+  rankBarBg: {
+    flexDirection: 'row',
+    height: 6,
+    backgroundColor: colors.border,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  rankSub: {
+    fontSize: 11,
+    color: colors.textMuted,
   },
 });

@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,14 +7,19 @@ import {
   colors,
   Button,
   StatCard,
-  BidCard,
+  EstadoCard,
+  AreaCard,
+  formatBRL,
   ScreenLayout,
 } from '../../src/presentation/components';
 import { useDashboardViewModel } from '../../src/presentation/viewmodels';
 
 export default function DashboardScreen() {
-  const { user, recommendedBids, loading } = useDashboardViewModel();
+  const { statsNacionais, topEstados, topAreas, loading } = useDashboardViewModel();
   const insets = useSafeAreaInsets();
+
+  const maxEstadoValor = topEstados[0]?.valor_total ?? 1;
+  const maxAreaValor = topAreas[0]?.valor_total ?? 1;
 
   return (
     <ScreenLayout>
@@ -32,8 +30,8 @@ export default function DashboardScreen() {
       >
         {/* Greeting */}
         <View style={styles.section}>
-          <Text style={styles.greeting}>Olá, {user?.name || 'Carlos'}!</Text>
-          <Text style={styles.greetingSub}>Veja como está o seu negócio hoje.</Text>
+          <Text style={styles.greeting}>Panorama</Text>
+          <Text style={styles.greetingSub}>Mercado nacional de licitações públicas.</Text>
         </View>
 
         {/* Stat cards */}
@@ -44,43 +42,67 @@ export default function DashboardScreen() {
           contentContainerStyle={{ gap: 12, paddingRight: 20 }}
         >
           <StatCard
-            iconName="check-circle"
-            title="1 Inscrição Ativa"
-            subtitle="Manutenção - Pref. de SP"
+            iconName="file-text"
+            title={loading ? '...' : statsNacionais.totalLicitacoes.toLocaleString('pt-BR')}
+            subtitle="Licitações no período"
             iconBg="#dbeafe"
             iconColor={colors.accent}
           />
           <StatCard
-            iconName="zap"
-            title="3 Oportunidades"
-            subtitle="Compatíveis com seu MEI"
+            iconName="dollar-sign"
+            title={loading ? '...' : formatBRL(statsNacionais.totalValor)}
+            subtitle="Volume total contratado"
             iconBg="#d1fae5"
             iconColor={colors.green}
           />
-          <TouchableOpacity style={styles.newSearchCard} activeOpacity={0.8}>
-            <Feather name="plus-circle" size={32} color="#fff" />
-            <Text style={styles.newSearchText}>Nova Busca</Text>
-          </TouchableOpacity>
+          <StatCard
+            iconName="map"
+            title={loading ? '...' : `${statsNacionais.numEstados} estados`}
+            subtitle="Com contratos ativos"
+            iconBg="#fce7f3"
+            iconColor="#be185d"
+          />
         </ScrollView>
 
-        {/* Recommended bids */}
+        {/* Top Estados */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionHeaderLeft}>
-              <Feather name="star" size={18} color={colors.green} />
-              <Text style={styles.sectionTitle}>Oportunidades Ideais</Text>
+              <Feather name="bar-chart-2" size={18} color={colors.accent} />
+              <Text style={styles.sectionTitle}>Top Estados por Volume</Text>
             </View>
             <TouchableOpacity onPress={() => router.push('/(tabs)/editais')}>
-              <Text style={styles.sectionLink}>Ver Todas</Text>
+              <Text style={styles.sectionLink}>Ver todos</Text>
             </TouchableOpacity>
           </View>
 
           {loading ? (
-            <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 20 }}>
-              Carregando...
-            </Text>
+            <Text style={styles.loadingText}>Carregando...</Text>
           ) : (
-            recommendedBids.map(bid => <BidCard key={bid.id} bid={bid} />)
+            topEstados.map((item, i) => (
+              <EstadoCard key={item.uf} item={item} maxValor={maxEstadoValor} rank={i + 1} />
+            ))
+          )}
+        </View>
+
+        {/* Top Áreas */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionHeaderLeft}>
+              <Feather name="layers" size={18} color={colors.green} />
+              <Text style={styles.sectionTitle}>Top Áreas de Serviço</Text>
+            </View>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/editais')}>
+              <Text style={styles.sectionLink}>Ver todas</Text>
+            </TouchableOpacity>
+          </View>
+
+          {loading ? (
+            <Text style={styles.loadingText}>Carregando...</Text>
+          ) : (
+            topAreas.map((item, i) => (
+              <AreaCard key={item.ramo_mei} item={item} maxValor={maxAreaValor} rank={i + 1} />
+            ))
           )}
         </View>
 
@@ -88,7 +110,7 @@ export default function DashboardScreen() {
         <View style={styles.editalInfoCard}>
           <Text style={styles.editalInfoTitle}>O que é um 'Edital'?</Text>
           <Text style={styles.editalInfoText}>
-            Regulamento de um concurso público. Diz o que o governo quer comprar, o valor e documentos.
+            Regulamento de um concurso público. Diz o que o governo quer comprar, o valor e os documentos necessários.
           </Text>
           <Button
             variant="outline"
@@ -130,28 +152,15 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 20, paddingTop: 20, gap: 24 },
-  section: { gap: 16 },
+  section: { gap: 12 },
   greeting: { fontSize: 34, fontWeight: '900', color: colors.primary, letterSpacing: -1 },
   greetingSub: { fontSize: 16, color: colors.textMuted, fontWeight: '500' },
   statsRow: { marginHorizontal: -20, paddingLeft: 20 },
-  newSearchCard: {
-    width: 160,
-    height: 110,
-    backgroundColor: colors.accent,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  newSearchText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
   sectionLink: { fontSize: 13, fontWeight: '700', color: colors.accent },
+  loadingText: { color: colors.textMuted, textAlign: 'center', marginTop: 12 },
   editalInfoCard: {
     backgroundColor: colors.orange,
     borderRadius: 28,
@@ -161,12 +170,7 @@ const styles = StyleSheet.create({
   },
   editalInfoTitle: { fontSize: 18, fontWeight: '700', color: '#2f1500' },
   editalInfoText: { fontSize: 13, color: '#5c2c00', lineHeight: 20 },
-  editalInfoIcon: {
-    position: 'absolute',
-    bottom: -20,
-    right: -20,
-    transform: [{ rotate: '12deg' }],
-  },
+  editalInfoIcon: { position: 'absolute', bottom: -20, right: -20, transform: [{ rotate: '12deg' }] },
   supportCard: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: 28,

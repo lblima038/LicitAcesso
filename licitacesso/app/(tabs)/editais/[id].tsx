@@ -9,48 +9,63 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, Button } from '../../../src/presentation/components';
-import { useBidDetailViewModel } from '../../../src/presentation/viewmodels';
+import { colors } from '../../../src/presentation/components';
+import { useEditalDetalheViewModel } from '../../../src/presentation/viewmodels';
 
-export default function EditalDetailScreen() {
+function InfoRow({ label, value }: { label: string; value?: string | number }) {
+  if (!value && value !== 0) return null;
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{String(value)}</Text>
+    </View>
+  );
+}
+
+export default function EditalDetalheScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { bid, loading, error, retry } = useBidDetailViewModel(id ?? '');
+  const { edital, loading, error, retry } = useEditalDetalheViewModel(id ?? '');
   const insets = useSafeAreaInsets();
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
+      <View style={[styles.center, { paddingTop: insets.top }]}>
         <Text style={styles.loadingText}>Carregando edital...</Text>
       </View>
     );
   }
 
-  if (error || !bid) {
+  if (error || !edital) {
     return (
-      <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
+      <View style={[styles.center, { paddingTop: insets.top }]}>
         <Feather name="alert-circle" size={44} color={colors.danger} />
-        <Text style={styles.errorTitle}>{error ?? 'Edital não encontrado.'}</Text>
-        <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
-          {error && (
-            <TouchableOpacity onPress={retry} style={styles.retryButton} activeOpacity={0.8}>
-              <Feather name="refresh-cw" size={16} color="#fff" />
-              <Text style={styles.retryText}>Tentar novamente</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={() => router.back()} style={styles.backTextButton} activeOpacity={0.8}>
-            <Text style={styles.backTextButtonLabel}>Voltar</Text>
+        <Text style={styles.errorText}>{error ?? 'Edital não encontrado.'}</Text>
+        <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+          <TouchableOpacity onPress={retry} style={styles.btnPrimary} activeOpacity={0.8}>
+            <Feather name="refresh-cw" size={15} color="#fff" />
+            <Text style={styles.btnPrimaryText}>Tentar novamente</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} style={styles.btnOutline} activeOpacity={0.8}>
+            <Text style={styles.btnOutlineText}>Voltar</Text>
           </TouchableOpacity>
         </View>
       </View>
     );
   }
 
-  const formattedValue = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(bid.estimatedValue);
+  const dataFmt = (() => {
+    try {
+      return new Date(edital.data_publicacao_pncp).toLocaleDateString('pt-BR', {
+        day: '2-digit', month: 'long', year: 'numeric',
+      });
+    } catch {
+      return edital.data_publicacao_pncp;
+    }
+  })();
 
-  const requirements = bid.requirements ?? [];
+  const valorFmt = edital.valor_total_estimado != null
+    ? edital.valor_total_estimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    : 'Não informado';
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -58,105 +73,76 @@ export default function EditalDetailScreen() {
         contentContainerStyle={[styles.container, { paddingTop: insets.top + 16, paddingBottom: 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Back + Tag */}
+        {/* Topo */}
         <View style={styles.topRow}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <Feather name="arrow-left" size={22} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.tag}>EDITAL SIMPLIFICADO</Text>
-        </View>
-
-        <Text style={styles.title}>{bid.title}</Text>
-
-        {/* Cards grid */}
-        <View style={styles.grid}>
-          {/* O que é */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={[styles.cardIcon, { backgroundColor: '#dbeafe' }]}>
-                <Feather name="help-circle" size={18} color={colors.accent} />
-              </View>
-              <Text style={styles.cardTitle}>O que é?</Text>
-            </View>
-            <Text style={styles.cardBody}>{bid.description}</Text>
-          </View>
-
-          {/* Quanto pagam */}
-          <View style={[styles.card, { backgroundColor: colors.accent }]}>
-            <View style={styles.cardHeader}>
-              <View style={[styles.cardIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                <Feather name="dollar-sign" size={18} color="#fff" />
-              </View>
-              <Text style={[styles.cardTitle, { color: '#fff' }]}>Quanto pagam?</Text>
-            </View>
-            <Text style={styles.valueText}>{formattedValue}</Text>
-            <Text style={styles.valueNote}>Pagamento garantido pelo governo local.</Text>
-          </View>
-
-          {/* O que preciso */}
-          <View style={[styles.card, { borderLeftWidth: 4, borderLeftColor: colors.green }]}>
-            <Text style={styles.cardTitle}>O que preciso fazer?</Text>
-            {requirements.length > 0 ? (
-              <View style={styles.requirementList}>
-                {requirements.map((req, index) => (
-                  <View key={index} style={styles.requirementItem}>
-                    <Feather name="check-circle" size={18} color={colors.green} />
-                    <Text style={styles.requirementText}>{req}</Text>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text style={styles.cardBody}>Consulte o edital completo para mais detalhes.</Text>
-            )}
-          </View>
-
-          {/* Prazo */}
-          <View style={[styles.card, { backgroundColor: colors.orange }]}>
-            <Text style={[styles.cardTitle, { color: colors.orangeDark }]}>Prazo de entrega</Text>
-            <View style={styles.deadlineRow}>
-              <View>
-                <Text style={styles.deadlineLabel}>DATA LIMITE</Text>
-                <Text style={styles.deadlineValue}>{bid.deadline}</Text>
-              </View>
-              {bid.deadlineTime && (
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={styles.deadlineLabel}>HORÁRIO</Text>
-                  <Text style={styles.deadlineValue}>{bid.deadlineTime}</Text>
-                </View>
-              )}
-            </View>
+          <View style={styles.situacaoBadge}>
+            <Text style={styles.situacaoText}>{edital.situacao_nome ?? '—'}</Text>
           </View>
         </View>
 
-        {/* CTA */}
-        <Button
-          variant="primary"
-          style={styles.ctaButton}
-          onPress={() => router.push('/checklist')}
-        >
-          <Text style={styles.ctaText}>Participar agora</Text>
-          <Feather name="zap" size={20} color="#fff" />
-        </Button>
+        {/* Título */}
+        <Text style={styles.title}>{edital.objeto_compra}</Text>
+        <Text style={styles.dataPublicacao}>Publicado em {dataFmt}</Text>
+
+        {/* Valor destaque */}
+        <View style={styles.valorCard}>
+          <View style={styles.valorCardHeader}>
+            <View style={styles.valorIcon}>
+              <Feather name="dollar-sign" size={18} color="#fff" />
+            </View>
+            <Text style={styles.valorLabel}>Valor Total Estimado</Text>
+          </View>
+          <Text style={styles.valorText}>{valorFmt}</Text>
+          <Text style={styles.valorNote}>Pagamento garantido pelo governo.</Text>
+        </View>
+
+        {/* Informações gerais */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Informações Gerais</Text>
+          <InfoRow label="Modalidade" value={edital.modalidade_nome} />
+          <InfoRow label="Ano da compra" value={edital.ano_compra} />
+          <InfoRow label="Município" value={edital.municipio_nome} />
+          <InfoRow label="UF" value={edital.uf} />
+          <InfoRow label="Órgão" value={edital.razao_social ?? edital.orgao_entidade} />
+          <InfoRow label="Unidade" value={edital.unidade_nome} />
+          <InfoRow label="Nº do processo" value={edital.numero_processo} />
+          <InfoRow label="Nº da compra" value={edital.numero_compra} />
+        </View>
+
+        {/* Área de atuação */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Área de Atuação</Text>
+          <InfoRow label="Ramo MEI" value={edital.ramo_mei} />
+          <InfoRow label="Tipo de objeto" value={edital.tipo_objeto} />
+        </View>
+
+        {/* Datas */}
+        <View style={[styles.card, { backgroundColor: colors.orange }]}>
+          <Text style={[styles.cardTitle, { color: colors.orangeDark }]}>Datas</Text>
+          <InfoRow label="Publicação PNCP" value={dataFmt} />
+          <InfoRow label="Abertura de propostas" value={edital.data_abertura_proposta} />
+          <InfoRow label="Encerramento" value={edital.data_encerramento_proposta} />
+        </View>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
+  center: {
     flex: 1,
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
+    paddingHorizontal: 32,
   },
-  loadingText: { color: colors.textMuted, fontSize: 16 },
-  errorTitle: { fontSize: 16, fontWeight: '600', color: colors.text, textAlign: 'center', paddingHorizontal: 32 },
-  retryButton: {
+  loadingText: { fontSize: 16, color: colors.textMuted },
+  errorText: { fontSize: 15, color: colors.text, textAlign: 'center', fontWeight: '600' },
+  btnPrimary: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -165,18 +151,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
   },
-  retryText: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  backTextButton: {
+  btnPrimaryText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  btnOutline: {
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: colors.border,
   },
-  backTextButtonLabel: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
-  container: { paddingHorizontal: 20, gap: 20 },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  backButton: {
+  btnOutlineText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
+  container: { paddingHorizontal: 20, gap: 16 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  backBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -186,21 +172,39 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  tag: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    color: colors.green,
-    textTransform: 'uppercase',
+  situacaoBadge: {
+    backgroundColor: '#d1fae5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
+  situacaoText: { fontSize: 12, fontWeight: '700', color: colors.green },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '900',
     color: colors.primary,
-    lineHeight: 36,
+    lineHeight: 32,
     letterSpacing: -0.5,
   },
-  grid: { gap: 14 },
+  dataPublicacao: { fontSize: 13, color: colors.textMuted },
+  valorCard: {
+    backgroundColor: colors.accent,
+    borderRadius: 20,
+    padding: 20,
+    gap: 6,
+  },
+  valorCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  valorIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  valorLabel: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.8)' },
+  valorText: { fontSize: 30, fontWeight: '900', color: '#fff' },
+  valorNote: { fontSize: 12, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic' },
   card: {
     backgroundColor: colors.surface,
     borderRadius: 20,
@@ -208,39 +212,17 @@ const styles = StyleSheet.create({
     gap: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
   },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
-  cardBody: { fontSize: 14, color: colors.textMuted, lineHeight: 22 },
-  valueText: { fontSize: 32, fontWeight: '900', color: '#fff' },
-  valueNote: { fontSize: 12, color: '#bfdbfe', fontStyle: 'italic' },
-  requirementList: { gap: 10 },
-  requirementItem: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  requirementText: { flex: 1, fontSize: 13, color: colors.textMuted, lineHeight: 20 },
-  deadlineRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  deadlineLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-    color: `${colors.orangeDark}99`,
-  },
-  deadlineValue: { fontSize: 22, fontWeight: '900', color: colors.orangeDark },
-  ctaButton: {
-    paddingVertical: 18,
-    borderRadius: 20,
+  cardTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 4 },
+  infoRow: {
     flexDirection: 'row',
-    gap: 10,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  ctaText: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  infoLabel: { fontSize: 13, color: colors.textMuted, flex: 1 },
+  infoValue: { fontSize: 13, fontWeight: '600', color: colors.text, flex: 2, textAlign: 'right' },
 });

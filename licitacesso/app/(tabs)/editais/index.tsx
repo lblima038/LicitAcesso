@@ -1,41 +1,30 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   colors,
-  BidCard,
+  EditalCard,
   BidCardSkeleton,
   EmptyState,
   ScreenLayout,
 } from '../../../src/presentation/components';
 import { useEditaisViewModel } from '../../../src/presentation/viewmodels';
 
-const FILTER_OPTIONS = [
-  { label: 'Todos', key: 'all' },
-  { label: 'Perto de mim', key: 'nearby' },
-  { label: 'Obras', key: 'obras' },
-  { label: 'Papelaria', key: 'papelaria' },
-  { label: 'Prazo Urgente', key: 'urgent', danger: true },
-];
+const PERIODOS = [
+  { label: '7 dias', value: '7' },
+  { label: '30 dias', value: '30' },
+  { label: '90 dias', value: '90' },
+  { label: '1 ano', value: '365' },
+] as const;
 
 export default function EditaisScreen() {
   const {
-    filteredBids,
-    searchQuery,
-    setSearchQuery,
-    activeFilter,
-    setActiveFilter,
-    loading,
-    error,
-    retry,
+    editais, paginacao, filtros, loading, error,
+    periodo, setPeriodo,
+    situacao, setSituacao,
+    pagina, setPagina,
   } = useEditaisViewModel();
   const insets = useSafeAreaInsets();
 
@@ -48,64 +37,63 @@ export default function EditaisScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Oportunidades</Text>
-          <Text style={styles.subtitle}>
-            Encontre licitações explicadas de um jeito simples para você crescer.
-          </Text>
+          <Text style={styles.title}>Editais</Text>
+          <Text style={styles.subtitle}>Licitações públicas abertas no Brasil.</Text>
         </View>
 
-        {/* Search bar */}
-        <View style={styles.searchBar}>
-          <Feather name="search" size={20} color={colors.accent} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Encontre oportunidades para sua MEI..."
-            placeholderTextColor={`${colors.textMuted}80`}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
-              <Feather name="x" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Filter chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
-        >
-          {FILTER_OPTIONS.map(f => {
-            const isActive = activeFilter === f.key;
-            return (
+        {/* Filtro de período */}
+        <View style={styles.filterGroup}>
+          <Text style={styles.filterLabel}>PERÍODO</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+            {PERIODOS.map(p => (
               <TouchableOpacity
-                key={f.key}
+                key={p.value}
+                style={[styles.chip, periodo === p.value && styles.chipActive]}
+                onPress={() => setPeriodo(p.value)}
                 activeOpacity={0.7}
-                onPress={() => setActiveFilter(f.key)}
-                style={[
-                  styles.filterChip,
-                  isActive && styles.filterChipActive,
-                  f.danger && !isActive && styles.filterChipDanger,
-                  f.danger && isActive && styles.filterChipDangerActive,
-                ]}
               >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    isActive && styles.filterChipTextActive,
-                    f.danger && !isActive && styles.filterChipTextDanger,
-                  ]}
-                >
-                  {f.label}
+                <Text style={[styles.chipText, periodo === p.value && styles.chipTextActive]}>
+                  {p.label}
                 </Text>
               </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+            ))}
+          </ScrollView>
+        </View>
 
-        {/* Results */}
+        {/* Filtro de situação */}
+        {filtros.situacoes.length > 0 && (
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>SITUAÇÃO</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+              <TouchableOpacity
+                style={[styles.chip, situacao === '' && styles.chipActive]}
+                onPress={() => setSituacao('')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.chipText, situacao === '' && styles.chipTextActive]}>Todas</Text>
+              </TouchableOpacity>
+              {filtros.situacoes.map(s => (
+                <TouchableOpacity
+                  key={s}
+                  style={[styles.chip, situacao === s && styles.chipActive]}
+                  onPress={() => setSituacao(situacao === s ? '' : s)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.chipText, situacao === s && styles.chipTextActive]}>{s}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Contador */}
+        {!loading && !error && (
+          <Text style={styles.contador}>
+            {paginacao.total.toLocaleString('pt-BR')} editais encontrados
+          </Text>
+        )}
+
+        {/* Lista */}
         {loading ? (
           <>
             <BidCardSkeleton />
@@ -117,22 +105,53 @@ export default function EditaisScreen() {
             <Feather name="wifi-off" size={40} color={colors.danger} />
             <Text style={styles.errorTitle}>Algo deu errado</Text>
             <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity onPress={retry} style={styles.retryButton} activeOpacity={0.8}>
-              <Feather name="refresh-cw" size={16} color="#fff" />
-              <Text style={styles.retryText}>Tentar novamente</Text>
-            </TouchableOpacity>
           </View>
-        ) : filteredBids.length === 0 ? (
+        ) : editais.length === 0 ? (
           <EmptyState
-            title="Nenhuma oportunidade encontrada"
-            subtitle={
-              searchQuery
-                ? `Sem resultados para "${searchQuery}". Tente outro termo ou remova os filtros.`
-                : 'Nenhum edital nesta categoria no momento.'
-            }
+            title="Nenhum edital encontrado"
+            subtitle="Tente ampliar o período ou remover os filtros."
           />
         ) : (
-          filteredBids.map(bid => <BidCard key={bid.id} bid={bid} />)
+          editais.map((item, i) => (
+            <EditalCard
+              key={i}
+              item={item}
+              onPress={() => router.push(`/(tabs)/editais/${item._id}`)}
+            />
+          ))
+        )}
+
+        {/* Paginação */}
+        {!loading && paginacao.paginas > 1 && (
+          <View style={styles.paginacao}>
+            <TouchableOpacity
+              style={[styles.pageBtn, pagina === 1 && styles.pageBtnDisabled]}
+              onPress={() => setPagina(pagina - 1)}
+              disabled={pagina === 1}
+              activeOpacity={0.7}
+            >
+              <Feather name="chevron-left" size={16} color={pagina === 1 ? colors.border : colors.accent} />
+              <Text style={[styles.pageBtnText, pagina === 1 && styles.pageBtnTextDisabled]}>
+                Anterior
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={styles.pageInfo}>
+              {pagina} / {paginacao.paginas}
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.pageBtn, pagina === paginacao.paginas && styles.pageBtnDisabled]}
+              onPress={() => setPagina(pagina + 1)}
+              disabled={pagina === paginacao.paginas}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.pageBtnText, pagina === paginacao.paginas && styles.pageBtnTextDisabled]}>
+                Próxima
+              </Text>
+              <Feather name="chevron-right" size={16} color={pagina === paginacao.paginas ? colors.border : colors.accent} />
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
     </ScreenLayout>
@@ -140,63 +159,46 @@ export default function EditaisScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingHorizontal: 20, paddingTop: 20, gap: 20 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 20, gap: 16 },
   header: { gap: 6 },
   title: { fontSize: 36, fontWeight: '900', color: colors.primary, letterSpacing: -1 },
   subtitle: { fontSize: 14, color: colors.textMuted, lineHeight: 22 },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 20,
+  filterGroup: { gap: 8 },
+  filterLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 1, color: colors.textMuted },
+  chipRow: { gap: 8, paddingRight: 4 },
+  chip: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-  },
-  filterRow: { gap: 10, paddingRight: 20 },
-  filterChip: {
-    paddingHorizontal: 18,
-    paddingVertical: 9,
+    paddingVertical: 8,
     borderRadius: 99,
     borderWidth: 1.5,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  filterChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  filterChipDanger: { borderColor: `${colors.danger}60` },
-  filterChipDangerActive: { backgroundColor: colors.danger, borderColor: colors.danger },
-  filterChipText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
-  filterChipTextActive: { color: '#fff' },
-  filterChipTextDanger: { color: colors.danger },
-  // Error state
-  errorContainer: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    gap: 12,
-  },
+  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
+  chipTextActive: { color: '#fff' },
+  contador: { fontSize: 13, color: colors.textMuted, fontWeight: '500' },
+  errorContainer: { alignItems: 'center', paddingVertical: 60, gap: 12 },
   errorTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
   errorText: { fontSize: 14, color: colors.textMuted, textAlign: 'center' },
-  retryButton: {
+  paginacao: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.accent,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginTop: 8,
+    justifyContent: 'space-between',
+    paddingVertical: 8,
   },
-  retryText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  pageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+  },
+  pageBtnDisabled: { borderColor: colors.border },
+  pageBtnText: { fontSize: 13, fontWeight: '700', color: colors.accent },
+  pageBtnTextDisabled: { color: colors.border },
+  pageInfo: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
 });

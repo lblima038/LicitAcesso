@@ -1,6 +1,58 @@
 import { Bid } from '../domain/entities';
 
-const BASE_URL = 'https://licitacessobackend.onrender.com';
+// ─── Editais individuais ──────────────────────────────────────────────────────
+
+export interface Edital {
+  _id: string;
+  ano_compra: number;
+  data_publicacao_pncp: string;
+  modalidade_nome: string;
+  municipio_nome: string;
+  objeto_compra: string;
+  ramo_mei: string;
+  valor_total_estimado: number;
+  situacao_nome: string;
+  [key: string]: any;
+}
+
+export interface EditaisResponse {
+  dados: Edital[];
+  paginacao: { total: number; pagina: number; tamanho: number; paginas: number };
+}
+
+export async function fetchEditais(params: {
+  data_inicio?: string;
+  data_fim?: string;
+  ramo_mei?: string;
+  situacao_nome?: string;
+  pagina?: number;
+  tamanho?: number;
+}): Promise<EditaisResponse> {
+  const p = new URLSearchParams();
+  if (params.data_inicio) p.set('data_inicio', params.data_inicio);
+  if (params.data_fim) p.set('data_fim', params.data_fim);
+  if (params.ramo_mei) p.set('ramo_mei', params.ramo_mei);
+  if (params.situacao_nome) p.set('situacao_nome', params.situacao_nome);
+  if (params.pagina) p.set('pagina', String(params.pagina));
+  if (params.tamanho) p.set('tamanho', String(params.tamanho));
+  const res = await fetch(`${BASE_URL}/editais?${p}`);
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+export async function fetchFiltros(): Promise<{ ramos_mei: string[]; situacoes: string[] }> {
+  const res = await fetch(`${BASE_URL}/editais/filtros`);
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+export async function fetchEditalById(id: string): Promise<Edital> {
+  const res = await fetch(`${BASE_URL}/editais/${id}`);
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+const BASE_URL = 'http://localhost:3000';
 
 // ─── Response types ───────────────────────────────────────────────────────────
 
