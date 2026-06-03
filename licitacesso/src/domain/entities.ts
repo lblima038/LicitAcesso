@@ -45,3 +45,47 @@ export interface BidDocument {
   description: string;
   actionUrl?: string;
 }
+
+// ─── Document Upload ──────────────────────────────────────────────────────────
+export type DocumentUploadStatus = 'aprovado' | 'pendente' | 'rejeitado';
+
+export interface UploadedDocument {
+  id: string;
+  name: string;
+  mimeType: string;
+  uploadDate: string;
+  status: DocumentUploadStatus;
+  uri?: string;
+  size?: number;
+}
+
+// ─── Alerts ───────────────────────────────────────────────────────────────────
+export type AlertType = 'novo_edital' | 'prazo_proximo' | 'resultado' | 'atualizacao';
+
+export interface AppAlert {
+  id: string;
+  type: AlertType;
+  title: string;
+  description: string;
+  dateTime: string;
+  isRead: boolean;
+}
+
+// ─── Proposals / Participation history ────────────────────────────────────────
+export type ProposalStatus = 'em_andamento' | 'ganhou' | 'perdeu' | 'cancelado';
+
+export interface Proposal {
+  id: string;
+  name: string;
+  organization: string;
+  date: string;
+  status: ProposalStatus;
+}
+
+// ─── Calendar Deadlines ───────────────────────────────────────────────────────
+export interface AppDeadline {
+  id: string;
+  title: string;
+  date: string;
+  description?: string;
+}

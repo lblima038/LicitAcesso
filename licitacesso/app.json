@@ -11,7 +11,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "br.com.licitacesso.app",
-      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -22,7 +21,6 @@
         "backgroundColor": "#003d9b"
       },
       "package": "br.com.licitacesso.app",
-      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -32,8 +30,6 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "@react-native-firebase/app",
-      "@react-native-firebase/auth",
       [
         "@react-native-google-signin/google-signin",
         {

@@ -2,30 +2,34 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { Platform } from 'react-native';
+import { AppContextProvider } from '../src/context/AppContext';
 
-// Encontre em: Firebase Console → Authentication → Sign-in method → Google → Web SDK configuration
-const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+const GOOGLE_WEB_CLIENT_ID = '386479303029-n20jbbhg3kkk2ihjb1jhlbiuld9on5rh.apps.googleusercontent.com';
 
 export default function RootLayout() {
   useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: WEB_CLIENT_ID,
-      offlineAccess: true,
-    });
+    if (Platform.OS === 'web') return;
+    try {
+      const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+      GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
+    } catch {}
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="profile" />
-        <Stack.Screen name="change-password" />
-        <Stack.Screen name="error" />
-      </Stack>
-    </SafeAreaProvider>
+    <AppContextProvider>
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="profile" />
+          <Stack.Screen name="change-password" />
+          <Stack.Screen name="error" />
+        </Stack>
+      </SafeAreaProvider>
+    </AppContextProvider>
   );
 }

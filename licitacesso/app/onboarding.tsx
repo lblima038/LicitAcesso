@@ -13,11 +13,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { colors, Button } from '../src/presentation/components';
 import { signInWithGoogle, statusCodes } from '../src/data/authService';
+import { useAppContext } from '../src/context/AppContext';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
+  const { login } = useAppContext();
   const [loading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
@@ -31,7 +33,7 @@ export default function OnboardingScreen() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            idToken: authUser.firebaseIdToken,
+            idToken: authUser.idToken,
             name: authUser.name,
             email: authUser.email,
           }),
@@ -41,6 +43,13 @@ export default function OnboardingScreen() {
           throw new Error(`Erro do servidor: ${response.status}`);
         }
       }
+
+      await login({
+        uid: authUser.uid,
+        displayName: authUser.name,
+        email: authUser.email,
+        photoURL: authUser.photoUrl,
+      });
 
       router.replace('/(tabs)/dashboard');
     } catch (error: unknown) {

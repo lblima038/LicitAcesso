@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import { Bid } from '../domain/entities';
+import { useAppContext } from '../context/AppContext';
 
 // ─── Paleta de cores ──────────────────────────────────────────────────────────
 export const colors = {
@@ -222,21 +223,31 @@ export function BidCardSkeleton() {
 }
 
 // ─── BottomTabBar ─────────────────────────────────────────────────────────────
-const tabItems = [
-  { route: '/(tabs)/dashboard', icon: 'home' as const, label: 'Início' },
-  { route: '/(tabs)/editais', icon: 'search' as const, label: 'Editais' },
-  { route: '/(tabs)/checklist', icon: 'check-square' as const, label: 'Inscrições' },
-  { route: '/(tabs)/chat', icon: 'message-square' as const, label: 'Suporte' },
+interface TabItem {
+  route: string;
+  icon: React.ComponentProps<typeof Feather>['name'];
+  label: string;
+  hasBadge?: boolean;
+}
+
+const tabItems: TabItem[] = [
+  { route: '/(tabs)/dashboard', icon: 'home', label: 'Início' },
+  { route: '/(tabs)/editais', icon: 'search', label: 'Editais' },
+  { route: '/(tabs)/documents', icon: 'file-text', label: 'Docs' },
+  { route: '/(tabs)/alerts', icon: 'bell', label: 'Alertas', hasBadge: true },
+  { route: '/(tabs)/profile', icon: 'user', label: 'Perfil' },
 ];
 
 export function BottomTabBar() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { unreadAlerts } = useAppContext();
 
   return (
     <View style={[styles.tabBar, { paddingBottom: insets.bottom + 8 }]}>
       {tabItems.map(item => {
         const isActive = pathname.startsWith(item.route.replace('/(tabs)', ''));
+        const showBadge = item.hasBadge && unreadAlerts > 0;
         return (
           <TouchableOpacity
             key={item.route}
@@ -244,11 +255,20 @@ export function BottomTabBar() {
             onPress={() => router.push(item.route as any)}
             activeOpacity={0.7}
           >
-            <Feather
-              name={item.icon}
-              size={22}
-              color={isActive ? '#fff' : `${colors.primary}80`}
-            />
+            <View style={{ position: 'relative' }}>
+              <Feather
+                name={item.icon}
+                size={20}
+                color={isActive ? '#fff' : `${colors.primary}80`}
+              />
+              {showBadge && (
+                <View style={styles.badgeDot}>
+                  <Text style={styles.badgeDotText}>
+                    {unreadAlerts > 9 ? '9+' : String(unreadAlerts)}
+                  </Text>
+                </View>
+              )}
+            </View>
             <Text style={[styles.tabLabel, isActive && { color: '#fff' }]}>
               {item.label}
             </Text>
@@ -262,6 +282,9 @@ export function BottomTabBar() {
 // ─── TopBar ───────────────────────────────────────────────────────────────────
 export function TopBar() {
   const insets = useSafeAreaInsets();
+  const { firebaseUser } = useAppContext();
+  const avatarUri = firebaseUser?.photoURL ?? 'https://lh3.googleusercontent.com/a/default-user';
+
   return (
     <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
       <View style={styles.topBarLeft}>
@@ -271,10 +294,7 @@ export function TopBar() {
       <View style={styles.topBarRight}>
         <Feather name="bell" size={20} color={colors.accent} />
         <View style={styles.topBarAvatar}>
-          <Image
-            source={{ uri: 'https://lh3.googleusercontent.com/a/default-user' }}
-            style={{ width: 36, height: 36 }}
-          />
+          <Image source={{ uri: avatarUri }} style={{ width: 36, height: 36 }} />
         </View>
       </View>
     </View>
@@ -588,6 +608,25 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     color: `${colors.primary}80`,
+  },
+  badgeDot: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    backgroundColor: colors.danger,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#fff',
+  },
+  badgeDotText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '800',
   },
   // EditalCard
   editalCard: {
