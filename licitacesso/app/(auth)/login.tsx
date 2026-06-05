@@ -28,27 +28,29 @@ export default function LoginScreen() {
 
       const authUser = await signInWithGoogle();
 
-      // Send idToken to NestJS backend for validation
-      if (API_BASE_URL) {
-        const res = await fetch(`${API_BASE_URL}/auth/google`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            idToken: authUser.idToken,
-            name: authUser.name,
-            email: authUser.email,
-          }),
-        });
-        if (!res.ok) throw new Error(`Erro do servidor: ${res.status}`);
+      // Troca o idToken do Firebase pelo JWT interno do backend
+      let accessToken: string | undefined;
+      const backendUrl = API_BASE_URL || 'http://localhost:3000';
+      const res = await fetch(`${backendUrl}/auth/firebase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: authUser.idToken }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        accessToken = data.access_token;
       }
 
-      // Persist user in context + AsyncStorage
-      await login({
-        uid: authUser.uid,
-        displayName: authUser.name,
-        email: authUser.email,
-        photoURL: authUser.photoUrl,
-      });
+      // Persiste usuário + token no contexto e AsyncStorage
+      await login(
+        {
+          uid: authUser.uid,
+          displayName: authUser.name,
+          email: authUser.email,
+          photoURL: authUser.photoUrl,
+        },
+        accessToken,
+      );
 
       router.replace('/(tabs)/dashboard');
     } catch (error: unknown) {

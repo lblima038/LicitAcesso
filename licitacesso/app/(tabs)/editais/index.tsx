@@ -1,5 +1,12 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+} from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,12 +18,13 @@ import {
   ScreenLayout,
 } from '../../../src/presentation/components';
 import { useEditaisViewModel } from '../../../src/presentation/viewmodels';
+import { useAppContext } from '../../../src/context/AppContext';
 
 const PERIODOS = [
-  { label: '7 dias', value: '7' },
-  { label: '30 dias', value: '30' },
-  { label: '90 dias', value: '90' },
-  { label: '1 ano', value: '365' },
+  { label: '7 dias',  value: '7'   },
+  { label: '30 dias', value: '30'  },
+  { label: '90 dias', value: '90'  },
+  { label: '1 ano',   value: '365' },
 ] as const;
 
 export default function EditaisScreen() {
@@ -24,9 +32,28 @@ export default function EditaisScreen() {
     editais, paginacao, filtros, loading, error,
     periodo, setPeriodo,
     situacao, setSituacao,
+    ramoMei, setRamoMei,
+    municipio, setMunicipio,
     pagina, setPagina,
   } = useEditaisViewModel();
+
+  const { favoritedIds, toggleFavorite } = useAppContext();
   const insets = useSafeAreaInsets();
+  const [municipioInput, setMunicipioInput] = useState(municipio);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMunicipioChange = (text: string) => {
+    setMunicipioInput(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setMunicipio(text.trim()), 400);
+  };
+
+  const clearMunicipio = () => {
+    setMunicipioInput('');
+    setMunicipio('');
+  };
+
+  const activeFilters = [situacao, ramoMei, municipio].filter(Boolean).length;
 
   return (
     <ScreenLayout>
@@ -41,7 +68,7 @@ export default function EditaisScreen() {
           <Text style={styles.subtitle}>Licitações públicas abertas no Brasil.</Text>
         </View>
 
-        {/* Filtro de período */}
+        {/* Período */}
         <View style={styles.filterGroup}>
           <Text style={styles.filterLabel}>PERÍODO</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
@@ -60,7 +87,7 @@ export default function EditaisScreen() {
           </ScrollView>
         </View>
 
-        {/* Filtro de situação */}
+        {/* Situação */}
         {filtros.situacoes.length > 0 && (
           <View style={styles.filterGroup}>
             <Text style={styles.filterLabel}>SITUAÇÃO</Text>
@@ -86,11 +113,72 @@ export default function EditaisScreen() {
           </View>
         )}
 
-        {/* Contador */}
+        {/* Ramo MEI */}
+        {filtros.ramos_mei.length > 0 && (
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>RAMO MEI</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+              <TouchableOpacity
+                style={[styles.chip, ramoMei === '' && styles.chipActive]}
+                onPress={() => setRamoMei('')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.chipText, ramoMei === '' && styles.chipTextActive]}>Todos</Text>
+              </TouchableOpacity>
+              {filtros.ramos_mei.map(r => (
+                <TouchableOpacity
+                  key={r}
+                  style={[styles.chip, ramoMei === r && styles.chipActive]}
+                  onPress={() => setRamoMei(ramoMei === r ? '' : r)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.chipText, ramoMei === r && styles.chipTextActive]} numberOfLines={1}>
+                    {r}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Município */}
+        <View style={styles.filterGroup}>
+          <Text style={styles.filterLabel}>MUNICÍPIO</Text>
+          <View style={styles.searchBox}>
+            <Feather name="map-pin" size={16} color={colors.textMuted} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar por cidade..."
+              placeholderTextColor={colors.textMuted}
+              value={municipioInput}
+              onChangeText={handleMunicipioChange}
+              returnKeyType="search"
+              autoCapitalize="words"
+            />
+            {municipioInput.length > 0 && (
+              <TouchableOpacity onPress={clearMunicipio} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name="x" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Contador + clear */}
         {!loading && !error && (
-          <Text style={styles.contador}>
-            {paginacao.total.toLocaleString('pt-BR')} editais encontrados
-          </Text>
+          <View style={styles.counterRow}>
+            <Text style={styles.contador}>
+              {paginacao.total.toLocaleString('pt-BR')} editais encontrados
+            </Text>
+            {activeFilters > 0 && (
+              <TouchableOpacity
+                onPress={() => { setSituacao(''); setRamoMei(''); clearMunicipio(); }}
+                style={styles.clearBtn}
+              >
+                <Feather name="x-circle" size={13} color={colors.accent} />
+                <Text style={styles.clearBtnText}>Limpar filtros ({activeFilters})</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
 
         {/* Lista */}
@@ -117,6 +205,17 @@ export default function EditaisScreen() {
               key={i}
               item={item}
               onPress={() => router.push(`/(tabs)/editais/${item._id}`)}
+              isFavorited={favoritedIds.has(item._id)}
+              onToggleFavorite={() => toggleFavorite({
+                bidId: item._id,
+                objeto_compra: item.objeto_compra,
+                municipio_nome: item.municipio_nome,
+                valor_total_estimado: item.valor_total_estimado,
+                situacao_nome: item.situacao_nome,
+                ramo_mei: item.ramo_mei,
+                modalidade_nome: item.modalidade_nome,
+                data_publicacao_pncp: item.data_publicacao_pncp,
+              })}
             />
           ))
         )}
@@ -131,14 +230,10 @@ export default function EditaisScreen() {
               activeOpacity={0.7}
             >
               <Feather name="chevron-left" size={16} color={pagina === 1 ? colors.border : colors.accent} />
-              <Text style={[styles.pageBtnText, pagina === 1 && styles.pageBtnTextDisabled]}>
-                Anterior
-              </Text>
+              <Text style={[styles.pageBtnText, pagina === 1 && styles.pageBtnTextDisabled]}>Anterior</Text>
             </TouchableOpacity>
 
-            <Text style={styles.pageInfo}>
-              {pagina} / {paginacao.paginas}
-            </Text>
+            <Text style={styles.pageInfo}>{pagina} / {paginacao.paginas}</Text>
 
             <TouchableOpacity
               style={[styles.pageBtn, pagina === paginacao.paginas && styles.pageBtnDisabled]}
@@ -146,9 +241,7 @@ export default function EditaisScreen() {
               disabled={pagina === paginacao.paginas}
               activeOpacity={0.7}
             >
-              <Text style={[styles.pageBtnText, pagina === paginacao.paginas && styles.pageBtnTextDisabled]}>
-                Próxima
-              </Text>
+              <Text style={[styles.pageBtnText, pagina === paginacao.paginas && styles.pageBtnTextDisabled]}>Próxima</Text>
               <Feather name="chevron-right" size={16} color={pagina === paginacao.paginas ? colors.border : colors.accent} />
             </TouchableOpacity>
           </View>
@@ -167,35 +260,34 @@ const styles = StyleSheet.create({
   filterLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 1, color: colors.textMuted },
   chipRow: { gap: 8, paddingRight: 4 },
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 99,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 99,
+    borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface,
   },
   chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   chipText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
   chipTextActive: { color: '#fff' },
+  searchBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: colors.surface, borderRadius: 14,
+    borderWidth: 1.5, borderColor: colors.border,
+    paddingHorizontal: 14, paddingVertical: 10,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: colors.text, padding: 0 },
+  counterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   contador: { fontSize: 13, color: colors.textMuted, fontWeight: '500' },
+  clearBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  clearBtnText: { fontSize: 12, fontWeight: '700', color: colors.accent },
   errorContainer: { alignItems: 'center', paddingVertical: 60, gap: 12 },
   errorTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
   errorText: { fontSize: 14, color: colors.textMuted, textAlign: 'center' },
   paginacao: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', paddingVertical: 8,
   },
   pageBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: colors.accent,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 16, paddingVertical: 10,
+    borderRadius: 12, borderWidth: 1.5, borderColor: colors.accent,
   },
   pageBtnDisabled: { borderColor: colors.border },
   pageBtnText: { fontSize: 13, fontWeight: '700', color: colors.accent },

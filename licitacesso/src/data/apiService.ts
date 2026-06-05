@@ -1,6 +1,14 @@
 import { Bid } from '../domain/entities';
 
-// ─── Editais individuais ──────────────────────────────────────────────────────
+const BASE_URL = 'http://localhost:3000';
+
+// ─── Auth helpers ─────────────────────────────────────────────────────────────
+
+function authHeaders(token: string) {
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+}
+
+// ─── Editais ──────────────────────────────────────────────────────────────────
 
 export interface Edital {
   _id: string;
@@ -52,9 +60,7 @@ export async function fetchEditalById(id: string): Promise<Edital> {
   return res.json();
 }
 
-const BASE_URL = 'http://localhost:3000';
-
-// ─── Response types ───────────────────────────────────────────────────────────
+// ─── Oportunidades ────────────────────────────────────────────────────────────
 
 export interface OportunidadePorEstado {
   uf: string;
@@ -75,8 +81,6 @@ export interface OportunidadePorArea {
   total_contratacoes: number;
   valor_total: number;
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getDefaultPeriod() {
   const today = new Date();
@@ -122,10 +126,7 @@ export function mapAreaToBid(item: OportunidadePorArea): Bid {
   };
 }
 
-// ─── In-memory cache para o detail view ──────────────────────────────────────
 export const bidCache = new Map<string, Bid>();
-
-// ─── Fetch functions ──────────────────────────────────────────────────────────
 
 export async function fetchPorEstado(uf?: string): Promise<OportunidadePorEstado[]> {
   const { periodo_inicio, periodo_fim } = getDefaultPeriod();
@@ -173,4 +174,224 @@ export async function fetchPorMes(mes: number, ano: number): Promise<Oportunidad
   if (!res.ok) throw new Error(`Erro ${res.status}`);
   const data = await res.json();
   return Array.isArray(data) ? data : (data.por_mes ?? []);
+}
+
+// ─── Checklist ────────────────────────────────────────────────────────────────
+
+export interface ChecklistDocument {
+  id: string;
+  bidId: string;
+  docType: string;
+  title: string;
+  description: string;
+  status: string;
+  lastUpdated?: string;
+  actionUrl?: string;
+}
+
+export async function fetchChecklist(bidId: string, token: string): Promise<ChecklistDocument[]> {
+  const res = await fetch(`${BASE_URL}/checklist/${bidId}`, {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+export async function updateChecklistStatus(
+  bidId: string,
+  docId: string,
+  status: string,
+  token: string,
+): Promise<ChecklistDocument> {
+  const res = await fetch(`${BASE_URL}/checklist/${bidId}/${docId}`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+// ─── Documentos do usuário ────────────────────────────────────────────────────
+
+export interface ApiUserDocument {
+  id: string;
+  name: string;
+  mimeType: string;
+  uploadDate: string;
+  status: string;
+  size?: number;
+}
+
+export async function fetchUserDocuments(token: string): Promise<ApiUserDocument[]> {
+  const res = await fetch(`${BASE_URL}/documents`, { headers: authHeaders(token) });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+export async function createUserDocument(
+  doc: { name: string; mimeType: string; uploadDate: string; size?: number; content?: string },
+  token: string,
+): Promise<ApiUserDocument> {
+  const res = await fetch(`${BASE_URL}/documents`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(doc),
+  });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+export async function deleteUserDocument(id: string, token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/documents/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+}
+
+// ─── Alertas ──────────────────────────────────────────────────────────────────
+
+export interface ApiAlert {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  dateTime: string;
+  isRead: boolean;
+}
+
+export interface ApiDeadline {
+  id: string;
+  title: string;
+  date: string;
+  description?: string;
+  bidId?: string;
+}
+
+export async function fetchAlerts(token: string): Promise<ApiAlert[]> {
+  const res = await fetch(`${BASE_URL}/alerts`, { headers: authHeaders(token) });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+export async function markAlertRead(id: string, token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/alerts/${id}/read`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+}
+
+export async function markAllAlertsRead(token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/alerts/read-all`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+}
+
+export async function createAlert(
+  dto: { type: string; title: string; description: string; dateTime?: string },
+  token: string,
+): Promise<ApiAlert> {
+  const res = await fetch(`${BASE_URL}/alerts`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+export async function fetchDeadlines(token: string): Promise<ApiDeadline[]> {
+  const res = await fetch(`${BASE_URL}/alerts/deadlines`, { headers: authHeaders(token) });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+// ─── Favoritos ────────────────────────────────────────────────────────────────
+
+export interface ApiFavorite {
+  id: string;
+  bidId: string;
+  objeto_compra: string;
+  municipio_nome?: string;
+  valor_total_estimado?: number;
+  situacao_nome?: string;
+  ramo_mei?: string;
+  modalidade_nome?: string;
+  data_publicacao_pncp?: string;
+  createdAt: string;
+}
+
+export async function fetchFavorites(token: string): Promise<ApiFavorite[]> {
+  const res = await fetch(`${BASE_URL}/favorites`, { headers: authHeaders(token) });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+export async function addFavorite(
+  dto: Omit<ApiFavorite, 'id' | 'createdAt'>,
+  token: string,
+): Promise<ApiFavorite> {
+  const res = await fetch(`${BASE_URL}/favorites`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+export async function removeFavorite(bidId: string, token: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/favorites/${bidId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+}
+
+// ─── Proposals ────────────────────────────────────────────────────────────────
+
+export interface ApiProposal {
+  id: string;
+  name: string;
+  organization: string;
+  date: string;
+  status: string;
+  bidId?: string;
+}
+
+export async function fetchProposals(token: string): Promise<ApiProposal[]> {
+  const res = await fetch(`${BASE_URL}/proposals`, { headers: authHeaders(token) });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+export async function createProposal(
+  dto: { name: string; organization: string; date: string; status?: string; bidId?: string },
+  token: string,
+): Promise<ApiProposal> {
+  const res = await fetch(`${BASE_URL}/proposals`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
+}
+
+export async function updateProposal(
+  id: string,
+  dto: { status?: string; name?: string; organization?: string },
+  token: string,
+): Promise<ApiProposal> {
+  const res = await fetch(`${BASE_URL}/proposals/${id}`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  return res.json();
 }

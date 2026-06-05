@@ -5,13 +5,14 @@ import {
   fetchEditais,
   fetchFiltros,
   fetchEditalById,
+  fetchChecklist,
+  updateChecklistStatus,
   Edital,
   OportunidadePorEstado,
   OportunidadePorArea,
+  ChecklistDocument,
 } from '../data/apiService';
-import { MockUserRepository } from '../data/repositories';
-
-const userRepo = new MockUserRepository();
+import { useAppContext } from '../context/AppContext';
 
 export function useDashboardViewModel() {
   const [topEstados, setTopEstados] = useState<OportunidadePorEstado[]>([]);
@@ -93,11 +94,13 @@ export function useEditaisViewModel() {
   const [periodo, setPeriodoState] = useState<keyof typeof PERIODOS>('30');
   const [ramoMei, setRamoMeiState] = useState('');
   const [situacao, setSituacaoState] = useState('');
+  const [municipio, setMunicipioState] = useState('');
   const [pagina, setPagina] = useState(1);
 
   const setPeriodo = (v: keyof typeof PERIODOS) => { setPeriodoState(v); setPagina(1); };
   const setRamoMei = (v: string) => { setRamoMeiState(v); setPagina(1); };
   const setSituacao = (v: string) => { setSituacaoState(v); setPagina(1); };
+  const setMunicipio = (v: string) => { setMunicipioState(v); setPagina(1); };
 
   useEffect(() => {
     fetchFiltros().then(setFiltros).catch(() => {});
@@ -113,6 +116,7 @@ export function useEditaisViewModel() {
       data_fim,
       ramo_mei: ramoMei || undefined,
       situacao_nome: situacao || undefined,
+      municipio_nome: municipio || undefined,
       pagina,
       tamanho: 20,
     })
@@ -124,13 +128,14 @@ export function useEditaisViewModel() {
       .catch(() => { if (!cancelled) setError('Não foi possível carregar os editais.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [periodo, ramoMei, situacao, pagina]);
+  }, [periodo, ramoMei, situacao, municipio, pagina]);
 
   return {
     editais, paginacao, filtros, loading, error,
     periodo, setPeriodo,
     ramoMei, setRamoMei,
     situacao, setSituacao,
+    municipio, setMunicipio,
     pagina, setPagina,
   };
 }
@@ -163,15 +168,34 @@ export function useBidDetailViewModel(_id: string) {
 }
 
 export function useChecklistViewModel(bidId: string) {
-  const [documents, setDocuments] = useState<any[]>([]);
+  const { token } = useAppContext();
+  const [documents, setDocuments] = useState<ChecklistDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    userRepo.getDocumentsForBid(bidId).then(docs => {
+  async function load() {
+    if (!token) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
+    try {
+      const docs = await fetchChecklist(bidId, token);
       setDocuments(docs);
+    } catch {
+      setError('Não foi possível carregar o checklist.');
+    } finally {
       setLoading(false);
-    });
-  }, [bidId]);
+    }
+  }
+
+  useEffect(() => { load(); }, [bidId, token]);
+
+  const updateStatus = async (docId: string, status: string) => {
+    if (!token) return;
+    try {
+      const updated = await updateChecklistStatus(bidId, docId, status, token);
+      setDocuments(prev => prev.map(d => d.id === updated.id ? updated : d));
+    } catch {}
+  };
 
   const progress =
     documents.length > 0
@@ -180,5 +204,5 @@ export function useChecklistViewModel(bidId: string) {
         )
       : 0;
 
-  return { documents, progress, loading };
+  return { documents, progress, loading, error, updateStatus };
 }

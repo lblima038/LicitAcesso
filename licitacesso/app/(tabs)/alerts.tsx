@@ -6,17 +6,19 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
+import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, ScreenLayout } from '../../src/presentation/components';
 import { useAppContext } from '../../src/context/AppContext';
 import { AppAlert, AlertType } from '../../src/domain/entities';
+import { ApiFavorite } from '../../src/data/apiService';
 
 const ALERT_CFG: Record<AlertType, { icon: string; bg: string; fg: string }> = {
-  novo_edital: { icon: 'file-plus', bg: '#dbeafe', fg: colors.accent },
-  prazo_proximo: { icon: 'clock', bg: '#fef3c7', fg: '#92400e' },
-  resultado: { icon: 'award', bg: '#d1fae5', fg: colors.green },
-  atualizacao: { icon: 'refresh-cw', bg: '#f3e8ff', fg: '#7c3aed' },
+  novo_edital:  { icon: 'file-plus',  bg: '#dbeafe', fg: colors.accent },
+  prazo_proximo:{ icon: 'clock',      bg: '#fef3c7', fg: '#92400e' },
+  resultado:    { icon: 'award',      bg: '#d1fae5', fg: colors.green },
+  atualizacao:  { icon: 'refresh-cw', bg: '#f3e8ff', fg: '#7c3aed' },
 };
 
 const WEEK = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
@@ -43,10 +45,57 @@ function buildCells(year: number, month: number): (number | null)[] {
   return cells;
 }
 
+function FavoriteCard({ item, onRemove }: { item: ApiFavorite; onRemove: () => void }) {
+  const dataFmt = (() => {
+    try {
+      return new Date(item.data_publicacao_pncp!).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch { return ''; }
+  })();
+
+  const valorFmt = item.valor_total_estimado != null
+    ? item.valor_total_estimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    : null;
+
+  return (
+    <TouchableOpacity
+      style={styles.favCard}
+      onPress={() => router.push(`/(tabs)/editais/${item.bidId}` as any)}
+      activeOpacity={0.8}
+    >
+      <View style={styles.favCardHeader}>
+        {item.situacao_nome ? (
+          <View style={styles.favSituacaoBadge}>
+            <Text style={styles.favSituacaoText}>{item.situacao_nome}</Text>
+          </View>
+        ) : <View />}
+        <TouchableOpacity onPress={onRemove} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Feather name="bookmark" size={18} color={colors.accent} />
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.favObjeto} numberOfLines={2}>{item.objeto_compra}</Text>
+      <View style={styles.favMeta}>
+        {item.municipio_nome ? (
+          <View style={styles.favMetaItem}>
+            <Feather name="map-pin" size={11} color={colors.textMuted} />
+            <Text style={styles.favMetaText}>{item.municipio_nome}</Text>
+          </View>
+        ) : null}
+        {dataFmt ? (
+          <View style={styles.favMetaItem}>
+            <Feather name="calendar" size={11} color={colors.textMuted} />
+            <Text style={styles.favMetaText}>{dataFmt}</Text>
+          </View>
+        ) : null}
+      </View>
+      {valorFmt && <Text style={styles.favValor}>{valorFmt}</Text>}
+    </TouchableOpacity>
+  );
+}
+
 export default function AlertsScreen() {
   const insets = useSafeAreaInsets();
-  const { alerts, deadlines, markAlertAsRead, markAllAlertsAsRead } = useAppContext();
-  const [section, setSection] = useState<'alerts' | 'calendar'>('alerts');
+  const { alerts, deadlines, favorites, markAlertAsRead, markAllAlertsAsRead, toggleFavorite } = useAppContext();
+  const [section, setSection] = useState<'alerts' | 'favorites' | 'calendar'>('alerts');
 
   const now = new Date();
   const [calYear, setCalYear] = useState(now.getFullYear());
@@ -82,6 +131,12 @@ export default function AlertsScreen() {
   const unread = alerts.filter(a => !a.isRead).length;
   const isCurrentMonth = calYear === now.getFullYear() && calMonth === now.getMonth();
 
+  const SEGMENTS = [
+    { key: 'alerts',    label: unread > 0 ? `Avisos (${unread})` : 'Avisos' },
+    { key: 'favorites', label: favorites.length > 0 ? `Favoritos (${favorites.length})` : 'Favoritos' },
+    { key: 'calendar',  label: 'Calendário' },
+  ] as const;
+
   const AlertRow = ({ item }: { item: AppAlert }) => {
     const cfg = ALERT_CFG[item.type];
     return (
@@ -114,25 +169,26 @@ export default function AlertsScreen() {
         contentContainerStyle={[styles.scroll, { paddingBottom: 120 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Segment toggle */}
+        {/* Segment toggle — 3 abas */}
         <View style={styles.segmented}>
-          {(['alerts', 'calendar'] as const).map(s => (
+          {SEGMENTS.map(s => (
             <TouchableOpacity
-              key={s}
-              style={[styles.segBtn, section === s && styles.segBtnActive]}
-              onPress={() => setSection(s)}
+              key={s.key}
+              style={[styles.segBtn, section === s.key && styles.segBtnActive]}
+              onPress={() => setSection(s.key)}
             >
-              <Text style={[styles.segText, section === s && styles.segTextActive]}>
-                {s === 'alerts' ? `Notificações${unread > 0 ? ` (${unread})` : ''}` : 'Calendário'}
+              <Text style={[styles.segText, section === s.key && styles.segTextActive]} numberOfLines={1}>
+                {s.label}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {section === 'alerts' ? (
+        {/* ── Avisos ── */}
+        {section === 'alerts' && (
           <View style={{ gap: 12 }}>
             <View style={styles.sectionRow}>
-              <Text style={styles.sectionTitle}>Alertas</Text>
+              <Text style={styles.sectionTitle}>Notificações</Text>
               {unread > 0 && (
                 <TouchableOpacity onPress={markAllAlertsAsRead}>
                   <Text style={styles.markAll}>Marcar todos como lido</Text>
@@ -148,9 +204,51 @@ export default function AlertsScreen() {
               </View>
             )}
           </View>
-        ) : (
+        )}
+
+        {/* ── Favoritos ── */}
+        {section === 'favorites' && (
+          <View style={{ gap: 12 }}>
+            <Text style={styles.sectionTitle}>Licitações Salvas</Text>
+            {favorites.length === 0 ? (
+              <View style={styles.empty}>
+                <Feather name="bookmark" size={40} color={colors.border} />
+                <Text style={styles.emptyTitle}>Nenhum favorito ainda</Text>
+                <Text style={styles.emptySubtitle}>
+                  Toque no ícone de marcador em qualquer edital para salvá-lo aqui.
+                </Text>
+                <TouchableOpacity
+                  style={styles.emptyAction}
+                  onPress={() => router.push('/(tabs)/editais')}
+                >
+                  <Text style={styles.emptyActionText}>Explorar Editais</Text>
+                  <Feather name="arrow-right" size={14} color={colors.accent} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              favorites.map(item => (
+                <FavoriteCard
+                  key={item.id}
+                  item={item}
+                  onRemove={() => toggleFavorite({
+                    bidId: item.bidId,
+                    objeto_compra: item.objeto_compra,
+                    municipio_nome: item.municipio_nome,
+                    valor_total_estimado: item.valor_total_estimado,
+                    situacao_nome: item.situacao_nome,
+                    ramo_mei: item.ramo_mei,
+                    modalidade_nome: item.modalidade_nome,
+                    data_publicacao_pncp: item.data_publicacao_pncp,
+                  })}
+                />
+              ))
+            )}
+          </View>
+        )}
+
+        {/* ── Calendário ── */}
+        {section === 'calendar' && (
           <View style={{ gap: 16 }}>
-            {/* Calendar card */}
             <View style={styles.calCard}>
               <View style={styles.calNav}>
                 <TouchableOpacity onPress={prevMonth} style={styles.calNavBtn}>
@@ -161,11 +259,9 @@ export default function AlertsScreen() {
                   <Feather name="chevron-right" size={20} color={colors.accent} />
                 </TouchableOpacity>
               </View>
-
               <View style={styles.calRow}>
                 {WEEK.map((d, i) => <Text key={i} style={styles.calWeekDay}>{d}</Text>)}
               </View>
-
               {Array.from({ length: Math.ceil(cells.length / 7) }).map((_, row) => (
                 <View key={row} style={styles.calRow}>
                   {cells.slice(row * 7, row * 7 + 7).map((day, col) => {
@@ -180,11 +276,7 @@ export default function AlertsScreen() {
                         onPress={() => setSelDay(day === selDay ? null : day)}
                         activeOpacity={0.7}
                       >
-                        <Text style={[
-                          styles.calDayText,
-                          isToday && styles.calTodayText,
-                          isSel && styles.calSelectedText,
-                        ]}>
+                        <Text style={[styles.calDayText, isToday && styles.calTodayText, isSel && styles.calSelectedText]}>
                           {day}
                         </Text>
                         {hasDl && <View style={[styles.calDot, isSel && { backgroundColor: '#fff' }]} />}
@@ -195,19 +287,14 @@ export default function AlertsScreen() {
               ))}
             </View>
 
-            {/* Selected day deadlines */}
             {selDay !== null && (
               <View style={{ gap: 8 }}>
-                <Text style={styles.sectionTitle}>
-                  Prazos em {selDay} de {MONTH_NAMES[calMonth]}
-                </Text>
+                <Text style={styles.sectionTitle}>Prazos em {selDay} de {MONTH_NAMES[calMonth]}</Text>
                 {selDeadlines.length === 0 ? (
                   <Text style={styles.noDeadlines}>Nenhum prazo neste dia.</Text>
                 ) : selDeadlines.map(d => (
                   <View key={d.id} style={styles.deadlineCard}>
-                    <View style={styles.dlIcon}>
-                      <Feather name="calendar" size={16} color={colors.accent} />
-                    </View>
+                    <View style={styles.dlIcon}><Feather name="calendar" size={16} color={colors.accent} /></View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.dlTitle}>{d.title}</Text>
                       {d.description && <Text style={styles.dlDesc}>{d.description}</Text>}
@@ -217,14 +304,11 @@ export default function AlertsScreen() {
               </View>
             )}
 
-            {/* All upcoming deadlines */}
             <View style={{ gap: 8 }}>
               <Text style={styles.sectionTitle}>Próximos Prazos</Text>
               {deadlines.map(d => (
                 <View key={d.id} style={styles.deadlineCard}>
-                  <View style={styles.dlIcon}>
-                    <Feather name="calendar" size={16} color={colors.accent} />
-                  </View>
+                  <View style={styles.dlIcon}><Feather name="calendar" size={16} color={colors.accent} /></View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.dlTitle}>{d.title}</Text>
                     <Text style={styles.dlDate}>
@@ -244,28 +328,21 @@ export default function AlertsScreen() {
 const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, paddingTop: 16, gap: 16 },
   segmented: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 12,
-    padding: 4,
-    gap: 4,
+    flexDirection: 'row', backgroundColor: colors.surfaceAlt,
+    borderRadius: 12, padding: 4, gap: 4,
   },
-  segBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
+  segBtn: { flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: 'center' },
   segBtnActive: { backgroundColor: colors.surface, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
-  segText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
+  segText: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
   segTextActive: { color: colors.text, fontWeight: '700' },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
   markAll: { fontSize: 13, fontWeight: '600', color: colors.accent },
+  // Alert rows
   alertCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 14,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    flexDirection: 'row', alignItems: 'flex-start',
+    backgroundColor: colors.surface, borderRadius: 16,
+    padding: 14, gap: 12, borderWidth: 1, borderColor: colors.border,
   },
   alertCardRead: { opacity: 0.6 },
   alertIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
@@ -275,17 +352,29 @@ const styles = StyleSheet.create({
   alertTime: { fontSize: 11, color: colors.textMuted, flexShrink: 0 },
   alertDesc: { fontSize: 13, color: colors.textMuted, lineHeight: 18 },
   unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent, marginTop: 4 },
+  // Favorites
+  favCard: {
+    backgroundColor: colors.surface, borderRadius: 16,
+    padding: 16, gap: 8, borderWidth: 1, borderColor: colors.border,
+  },
+  favCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  favSituacaoBadge: { backgroundColor: '#d1fae5', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  favSituacaoText: { fontSize: 11, fontWeight: '700', color: colors.green },
+  favObjeto: { fontSize: 14, fontWeight: '700', color: colors.text, lineHeight: 20 },
+  favMeta: { flexDirection: 'row', gap: 12 },
+  favMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  favMetaText: { fontSize: 12, color: colors.textMuted },
+  favValor: { fontSize: 15, fontWeight: '800', color: colors.accent },
+  // Empty
   empty: { alignItems: 'center', paddingVertical: 40, gap: 10 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
   emptySubtitle: { fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
+  emptyAction: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  emptyActionText: { fontSize: 13, fontWeight: '700', color: colors.accent },
   // Calendar
   calCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    padding: 16,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: 20,
+    padding: 16, gap: 4, borderWidth: 1, borderColor: colors.border,
   },
   calNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   calNavBtn: { padding: 8 },
@@ -301,14 +390,9 @@ const styles = StyleSheet.create({
   calDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.accent, marginTop: 1 },
   // Deadlines
   deadlineCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    flexDirection: 'row', alignItems: 'flex-start',
+    backgroundColor: colors.surface, borderRadius: 14,
+    padding: 14, gap: 12, borderWidth: 1, borderColor: colors.border,
   },
   dlIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#dbeafe', alignItems: 'center', justifyContent: 'center' },
   dlTitle: { fontSize: 14, fontWeight: '700', color: colors.text },

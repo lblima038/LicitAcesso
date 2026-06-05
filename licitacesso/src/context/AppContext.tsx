@@ -1,8 +1,26 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { UploadedDocument, AppAlert, Proposal, AppDeadline } from '../domain/entities';
+import {
+  fetchAlerts,
+  fetchDeadlines,
+  fetchUserDocuments,
+  createUserDocument,
+  deleteUserDocument,
+  markAlertRead,
+  markAllAlertsRead,
+  fetchProposals,
+  createProposal as apiCreateProposal,
+  updateProposal as apiUpdateProposal,
+  fetchFavorites,
+  addFavorite as apiAddFavorite,
+  removeFavorite as apiRemoveFavorite,
+  ApiAlert,
+  ApiDeadline,
+  ApiProposal,
+  ApiFavorite,
+} from '../data/apiService';
 
-// AsyncStorage — graceful fallback to in-memory if not yet installed
 let _AS: { getItem(k: string): Promise<string | null>; setItem(k: string, v: string): Promise<void>; removeItem(k: string): Promise<void> };
 try {
   const mod = require('@react-native-async-storage/async-storage').default;
@@ -16,7 +34,6 @@ try {
   };
 }
 
-// App user — stored in AsyncStorage, no Firebase required
 export type AppUser = {
   uid: string;
   displayName: string | null;
@@ -24,173 +41,253 @@ export type AppUser = {
   photoURL: string | null;
 } | null;
 
-const MOCK_ALERTS: AppAlert[] = [
-  { id: '1', type: 'novo_edital', title: 'Novo edital disponível', description: 'Edital de limpeza urbana — Prefeitura de São Paulo publicou nova licitação', dateTime: '2026-06-02T08:00:00Z', isRead: false },
-  { id: '2', type: 'prazo_proximo', title: 'Prazo se aproximando', description: 'Inscrição para edital de TI do Ministério da Saúde encerra em 2 dias', dateTime: '2026-06-01T14:30:00Z', isRead: false },
-  { id: '3', type: 'resultado', title: 'Resultado publicado', description: 'Você foi classificado na fase 2 da licitação de Serviços de TI #2024-001', dateTime: '2026-05-30T09:15:00Z', isRead: false },
-  { id: '4', type: 'atualizacao', title: 'Edital atualizado', description: 'Critérios e documentação do edital de consultoria foram revisados', dateTime: '2026-05-28T16:00:00Z', isRead: true },
-  { id: '5', type: 'novo_edital', title: 'Nova oportunidade em SP', description: 'Licitação para serviços de manutenção predial — valor estimado R$ 450.000', dateTime: '2026-05-27T11:00:00Z', isRead: true },
-];
-
-const MOCK_DEADLINES: AppDeadline[] = [
-  { id: '1', title: 'Inscrição — Limpeza Urbana SP', date: '2026-06-05', description: 'Prazo final para envio de propostas' },
-  { id: '2', title: 'Entrega de Documentos — TI Gov', date: '2026-06-10', description: 'Documentação técnica e certidões' },
-  { id: '3', title: 'Resultado Fase 1 — Consultoria', date: '2026-06-18', description: 'Publicação dos classificados na fase habilitatória' },
-];
-
-const MOCK_PROPOSALS: Proposal[] = [
-  { id: '1', name: 'Serviços de TI — Ministério da Saúde', organization: 'Ministério da Saúde', date: '2026-05-15', status: 'ganhou' },
-  { id: '2', name: 'Limpeza e Conservação — Prefeitura SP', organization: 'Prefeitura de São Paulo', date: '2026-05-20', status: 'em_andamento' },
-  { id: '3', name: 'Consultoria Financeira — TCU', organization: 'TCU', date: '2026-04-10', status: 'perdeu' },
-  { id: '4', name: 'Manutenção Predial — INSS', organization: 'INSS', date: '2026-04-01', status: 'cancelado' },
-  { id: '5', name: 'Desenvolvimento de Software — Serpro', organization: 'Serpro', date: '2026-03-20', status: 'ganhou' },
-  { id: '6', name: 'Fornecimento de Equipamentos — MEC', organization: 'Ministério da Educação', date: '2026-03-05', status: 'em_andamento' },
-];
-
 const KEYS = {
-  USER: '@licitacesso:user_v1',
+  USER:      '@licitacesso:user_v1',
+  TOKEN:     '@licitacesso:token_v1',
   DOCUMENTS: '@licitacesso:documents_v1',
-  ALERTS_READ: '@licitacesso:alerts_read_v1',
-  PROPOSALS: '@licitacesso:proposals_cache_v1',
-  PROPOSALS_TIME: '@licitacesso:proposals_time_v1',
 };
 
-const PROPOSALS_TTL = 5 * 60 * 1000;
+function apiAlertToApp(a: ApiAlert): AppAlert {
+  return { id: a.id, type: a.type as AppAlert['type'], title: a.title, description: a.description, dateTime: a.dateTime, isRead: a.isRead };
+}
+function apiDeadlineToApp(d: ApiDeadline): AppDeadline {
+  return { id: d.id, title: d.title, date: d.date, description: d.description };
+}
+function apiProposalToApp(p: ApiProposal): Proposal {
+  return { id: p.id, name: p.name, organization: p.organization, date: p.date, status: p.status as Proposal['status'] };
+}
 
 interface AppContextValue {
   firebaseUser: AppUser;
   authLoading: boolean;
+  token: string | null;
   documents: UploadedDocument[];
   alerts: AppAlert[];
   deadlines: AppDeadline[];
   proposals: Proposal[];
+  favorites: ApiFavorite[];
+  favoritedIds: Set<string>;
   unreadAlerts: number;
-  login: (user: NonNullable<AppUser>) => Promise<void>;
+  login: (user: NonNullable<AppUser>, accessToken?: string) => Promise<void>;
   logout: () => Promise<void>;
-  addDocument: (doc: UploadedDocument) => void;
-  markAlertAsRead: (id: string) => void;
-  markAllAlertsAsRead: () => void;
+  addDocument: (doc: UploadedDocument) => Promise<void>;
+  removeDocument: (id: string) => Promise<void>;
+  markAlertAsRead: (id: string) => Promise<void>;
+  markAllAlertsAsRead: () => Promise<void>;
+  addProposal: (dto: { name: string; organization: string; date: string; status?: string; bidId?: string }) => Promise<void>;
+  updateProposalStatus: (id: string, status: string) => Promise<void>;
+  toggleFavorite: (edital: Omit<ApiFavorite, 'id' | 'createdAt'>) => Promise<void>;
+  refreshAlerts: () => Promise<void>;
+  refreshDocuments: () => Promise<void>;
+  refreshProposals: () => Promise<void>;
+  refreshFavorites: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue>({
   firebaseUser: null,
   authLoading: true,
+  token: null,
   documents: [],
-  alerts: MOCK_ALERTS,
-  deadlines: MOCK_DEADLINES,
-  proposals: MOCK_PROPOSALS,
-  unreadAlerts: MOCK_ALERTS.filter(a => !a.isRead).length,
+  alerts: [],
+  deadlines: [],
+  proposals: [],
+  favorites: [],
+  favoritedIds: new Set(),
+  unreadAlerts: 0,
   login: async () => {},
   logout: async () => {},
-  addDocument: () => {},
-  markAlertAsRead: () => {},
-  markAllAlertsAsRead: () => {},
+  addDocument: async () => {},
+  removeDocument: async () => {},
+  markAlertAsRead: async () => {},
+  markAllAlertsAsRead: async () => {},
+  addProposal: async () => {},
+  updateProposalStatus: async () => {},
+  toggleFavorite: async () => {},
+  refreshAlerts: async () => {},
+  refreshDocuments: async () => {},
+  refreshProposals: async () => {},
+  refreshFavorites: async () => {},
 });
 
 export function AppContextProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<AppUser>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
-  const [alerts, setAlerts] = useState<AppAlert[]>(MOCK_ALERTS);
+  const [alerts, setAlerts] = useState<AppAlert[]>([]);
+  const [deadlines, setDeadlines] = useState<AppDeadline[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [favorites, setFavorites] = useState<ApiFavorite[]>([]);
 
-  // Restore user session from AsyncStorage
+  const favoritedIds = new Set(favorites.map(f => f.bidId));
+
+  // Restore user session and token
   useEffect(() => {
-    _AS.getItem(KEYS.USER).then(raw => {
-      if (raw) setFirebaseUser(JSON.parse(raw));
-    }).catch(() => {}).finally(() => setAuthLoading(false));
+    Promise.all([_AS.getItem(KEYS.USER), _AS.getItem(KEYS.TOKEN)])
+      .then(([userRaw, storedToken]) => {
+        if (userRaw) setFirebaseUser(JSON.parse(userRaw));
+        if (storedToken) setToken(storedToken);
+      })
+      .catch(() => {})
+      .finally(() => setAuthLoading(false));
   }, []);
 
-  // Restore documents
-  useEffect(() => {
-    _AS.getItem(KEYS.DOCUMENTS).then(raw => {
+  const loadAlertsAndDeadlines = useCallback(async (t: string) => {
+    try {
+      const [a, d] = await Promise.all([fetchAlerts(t), fetchDeadlines(t)]);
+      setAlerts(a.map(apiAlertToApp));
+      setDeadlines(d.map(apiDeadlineToApp));
+    } catch {}
+  }, []);
+
+  const loadDocuments = useCallback(async (t: string) => {
+    try {
+      const docs = await fetchUserDocuments(t);
+      setDocuments(docs.map(d => ({
+        id: d.id, name: d.name, mimeType: d.mimeType,
+        uploadDate: d.uploadDate, status: d.status as UploadedDocument['status'], size: d.size,
+      })));
+    } catch {
+      const raw = await _AS.getItem(KEYS.DOCUMENTS).catch(() => null);
       if (raw) setDocuments(JSON.parse(raw));
-    }).catch(() => {});
+    }
   }, []);
 
-  // Restore alert read states
+  const loadProposals = useCallback(async (t: string) => {
+    try {
+      const data = await fetchProposals(t);
+      setProposals(data.map(apiProposalToApp));
+    } catch {}
+  }, []);
+
+  const loadFavorites = useCallback(async (t: string) => {
+    try {
+      const data = await fetchFavorites(t);
+      setFavorites(data);
+    } catch {}
+  }, []);
+
+  // Load all backend data once token is available
   useEffect(() => {
-    _AS.getItem(KEYS.ALERTS_READ).then(raw => {
-      if (!raw) return;
-      const readIds: string[] = JSON.parse(raw);
-      setAlerts(prev => prev.map(a => ({ ...a, isRead: readIds.includes(a.id) || a.isRead })));
-    }).catch(() => {});
-  }, []);
+    if (!token) return;
+    loadAlertsAndDeadlines(token);
+    loadDocuments(token);
+    loadProposals(token);
+    loadFavorites(token);
+  }, [token]);
 
-  // Load proposals (cached 5 min)
-  useEffect(() => {
-    (async () => {
-      try {
-        const [timeRaw, cacheRaw] = await Promise.all([
-          _AS.getItem(KEYS.PROPOSALS_TIME),
-          _AS.getItem(KEYS.PROPOSALS),
-        ]);
-        if (timeRaw && cacheRaw && Date.now() - Number(timeRaw) < PROPOSALS_TTL) {
-          setProposals(JSON.parse(cacheRaw));
-          return;
-        }
-      } catch {}
-      setProposals(MOCK_PROPOSALS);
-      _AS.setItem(KEYS.PROPOSALS, JSON.stringify(MOCK_PROPOSALS)).catch(() => {});
-      _AS.setItem(KEYS.PROPOSALS_TIME, String(Date.now())).catch(() => {});
-    })();
-  }, []);
-
-  const login = useCallback(async (user: NonNullable<AppUser>) => {
+  const login = useCallback(async (user: NonNullable<AppUser>, accessToken?: string) => {
     await _AS.setItem(KEYS.USER, JSON.stringify(user));
     setFirebaseUser(user);
+    if (accessToken) {
+      await _AS.setItem(KEYS.TOKEN, accessToken);
+      setToken(accessToken);
+    }
   }, []);
 
   const logout = useCallback(async () => {
     if (Platform.OS !== 'web') {
-      try {
-        const { signOutGoogle } = require('./authService');
-        await signOutGoogle();
-      } catch {}
+      try { const { signOutGoogle } = require('./authService'); await signOutGoogle(); } catch {}
     }
-    await _AS.removeItem(KEYS.USER);
+    await Promise.all([_AS.removeItem(KEYS.USER), _AS.removeItem(KEYS.TOKEN)]);
     setFirebaseUser(null);
+    setToken(null);
+    setDocuments([]);
+    setAlerts([]);
+    setDeadlines([]);
+    setProposals([]);
+    setFavorites([]);
   }, []);
 
-  const addDocument = useCallback((doc: UploadedDocument) => {
+  const addDocument = useCallback(async (doc: UploadedDocument) => {
+    if (token) {
+      try {
+        const created = await createUserDocument(
+          { name: doc.name, mimeType: doc.mimeType, uploadDate: doc.uploadDate, size: doc.size },
+          token,
+        );
+        setDocuments(prev => [{
+          id: created.id, name: created.name, mimeType: created.mimeType,
+          uploadDate: created.uploadDate, status: created.status as UploadedDocument['status'],
+          size: created.size, uri: doc.uri,
+        }, ...prev]);
+        return;
+      } catch {}
+    }
     setDocuments(prev => {
       const updated = [doc, ...prev];
       _AS.setItem(KEYS.DOCUMENTS, JSON.stringify(updated)).catch(() => {});
       return updated;
     });
-  }, []);
+  }, [token]);
 
-  const markAlertAsRead = useCallback((id: string) => {
-    setAlerts(prev => {
-      const updated = prev.map(a => a.id === id ? { ...a, isRead: true } : a);
-      const readIds = updated.filter(a => a.isRead).map(a => a.id);
-      _AS.setItem(KEYS.ALERTS_READ, JSON.stringify(readIds)).catch(() => {});
-      return updated;
-    });
-  }, []);
+  const removeDocument = useCallback(async (id: string) => {
+    if (token) { try { await deleteUserDocument(id, token); } catch {} }
+    setDocuments(prev => prev.filter(d => d.id !== id));
+  }, [token]);
 
-  const markAllAlertsAsRead = useCallback(() => {
-    setAlerts(prev => {
-      const updated = prev.map(a => ({ ...a, isRead: true }));
-      _AS.setItem(KEYS.ALERTS_READ, JSON.stringify(updated.map(a => a.id))).catch(() => {});
-      return updated;
-    });
-  }, []);
+  const markAlertAsRead = useCallback(async (id: string) => {
+    setAlerts(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
+    if (token) { try { await markAlertRead(id, token); } catch {} }
+  }, [token]);
+
+  const markAllAlertsAsRead = useCallback(async () => {
+    setAlerts(prev => prev.map(a => ({ ...a, isRead: true })));
+    if (token) { try { await markAllAlertsRead(token); } catch {} }
+  }, [token]);
+
+  const addProposal = useCallback(async (dto: { name: string; organization: string; date: string; status?: string; bidId?: string }) => {
+    if (!token) return;
+    try {
+      const created = await apiCreateProposal(dto, token);
+      setProposals(prev => [apiProposalToApp(created), ...prev]);
+    } catch {}
+  }, [token]);
+
+  const updateProposalStatus = useCallback(async (id: string, status: string) => {
+    setProposals(prev => prev.map(p => p.id === id ? { ...p, status: status as Proposal['status'] } : p));
+    if (token) { try { await apiUpdateProposal(id, { status }, token); } catch {} }
+  }, [token]);
+
+  const toggleFavorite = useCallback(async (edital: Omit<ApiFavorite, 'id' | 'createdAt'>) => {
+    if (!token) return;
+    const isFav = favorites.some(f => f.bidId === edital.bidId);
+    if (isFav) {
+      // Otimista: remove imediatamente
+      setFavorites(prev => prev.filter(f => f.bidId !== edital.bidId));
+      try { await apiRemoveFavorite(edital.bidId, token); } catch {
+        // Reverte se falhar
+        setFavorites(prev => [...prev, { ...edital, id: '', createdAt: '' }]);
+      }
+    } else {
+      // Otimista: adiciona imediatamente com id temporário
+      const temp: ApiFavorite = { ...edital, id: `tmp_${edital.bidId}`, createdAt: new Date().toISOString() };
+      setFavorites(prev => [temp, ...prev]);
+      try {
+        const created = await apiAddFavorite(edital, token);
+        setFavorites(prev => prev.map(f => f.id === temp.id ? created : f));
+      } catch {
+        setFavorites(prev => prev.filter(f => f.id !== temp.id));
+      }
+    }
+  }, [token, favorites]);
+
+  const refreshAlerts    = useCallback(async () => { if (token) await loadAlertsAndDeadlines(token); }, [token, loadAlertsAndDeadlines]);
+  const refreshDocuments = useCallback(async () => { if (token) await loadDocuments(token); }, [token, loadDocuments]);
+  const refreshProposals = useCallback(async () => { if (token) await loadProposals(token); }, [token, loadProposals]);
+  const refreshFavorites = useCallback(async () => { if (token) await loadFavorites(token); }, [token, loadFavorites]);
 
   return (
     <AppContext.Provider value={{
-      firebaseUser,
-      authLoading,
-      documents,
-      alerts,
-      deadlines: MOCK_DEADLINES,
-      proposals,
+      firebaseUser, authLoading, token,
+      documents, alerts, deadlines, proposals, favorites, favoritedIds,
       unreadAlerts: alerts.filter(a => !a.isRead).length,
-      login,
-      logout,
-      addDocument,
-      markAlertAsRead,
-      markAllAlertsAsRead,
+      login, logout,
+      addDocument, removeDocument,
+      markAlertAsRead, markAllAlertsAsRead,
+      addProposal, updateProposalStatus,
+      toggleFavorite,
+      refreshAlerts, refreshDocuments, refreshProposals, refreshFavorites,
     }}>
       {children}
     </AppContext.Provider>

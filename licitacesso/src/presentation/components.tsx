@@ -319,6 +319,7 @@ export function ScreenLayout({ children }: ScreenLayoutProps) {
 
 // ─── EditalCard ───────────────────────────────────────────────────────────────
 interface EditalItem {
+  _id?: string;
   ano_compra: number;
   data_publicacao_pncp: string;
   modalidade_nome: string;
@@ -329,7 +330,14 @@ interface EditalItem {
   situacao_nome: string;
 }
 
-export function EditalCard({ item, onPress }: { item: EditalItem; onPress?: () => void }) {
+interface EditalCardProps {
+  item: EditalItem;
+  onPress?: () => void;
+  isFavorited?: boolean;
+  onToggleFavorite?: () => void;
+}
+
+export function EditalCard({ item, onPress, isFavorited, onToggleFavorite }: EditalCardProps) {
   const dataFmt = (() => {
     try {
       return new Date(item.data_publicacao_pncp).toLocaleDateString('pt-BR', {
@@ -350,7 +358,23 @@ export function EditalCard({ item, onPress }: { item: EditalItem; onPress?: () =
         <View style={styles.editalSituacaoBadge}>
           <Text style={styles.editalSituacaoText}>{item.situacao_nome ?? '—'}</Text>
         </View>
-        <Text style={styles.editalData}>{dataFmt}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={styles.editalData}>{dataFmt}</Text>
+          {onToggleFavorite && (
+            <TouchableOpacity
+              onPress={onToggleFavorite}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+            >
+              <Feather
+                name={isFavorited ? 'bookmark' : 'bookmark'}
+                size={18}
+                color={isFavorited ? colors.accent : colors.border}
+                style={isFavorited ? { opacity: 1 } : { opacity: 0.5 }}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       <Text style={styles.editalObjeto} numberOfLines={3}>{item.objeto_compra}</Text>
       <View style={styles.editalMeta}>

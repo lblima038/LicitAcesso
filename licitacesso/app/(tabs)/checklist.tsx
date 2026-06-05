@@ -14,8 +14,9 @@ import { useChecklistViewModel } from '../../src/presentation/viewmodels';
 import { DocumentStatus } from '../../src/domain/entities';
 
 export default function ChecklistScreen() {
-  const { documents, progress, loading } = useChecklistViewModel('1');
+  const { documents, progress, loading, error } = useChecklistViewModel('1');
   const insets = useSafeAreaInsets();
+  const okCount = documents.filter(d => d.status === DocumentStatus.OK).length;
 
   return (
     <ScreenLayout>
@@ -34,7 +35,7 @@ export default function ChecklistScreen() {
               <Text style={styles.progressLabel}>Status da Habilitação</Text>
               <Text style={styles.progressValue}>{progress}%</Text>
             </View>
-            <Text style={styles.progressCount}>4 de 6 documentos</Text>
+            <Text style={styles.progressCount}>{okCount} de {documents.length} documentos</Text>
           </View>
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${progress}%` }]} />
@@ -45,6 +46,10 @@ export default function ChecklistScreen() {
         {loading ? (
           <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 20 }}>
             Carregando...
+          </Text>
+        ) : error ? (
+          <Text style={{ color: colors.danger, textAlign: 'center', marginTop: 20 }}>
+            {error}
           </Text>
         ) : (
           <View style={styles.docList}>

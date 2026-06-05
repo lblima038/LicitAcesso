@@ -5,12 +5,14 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../src/presentation/components';
-import { useEditalDetalheViewModel } from '../../../src/presentation/viewmodels';
+import { useEditalDetalheViewModel, useChecklistViewModel } from '../../../src/presentation/viewmodels';
 
 function InfoRow({ label, value }: { label: string; value?: string | number }) {
   if (!value && value !== 0) return null;
@@ -18,6 +20,92 @@ function InfoRow({ label, value }: { label: string; value?: string | number }) {
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={styles.infoValue}>{String(value)}</Text>
+    </View>
+  );
+}
+
+const STATUS_COLOR: Record<string, string> = {
+  ok:         colors.green,
+  pending:    colors.orange ?? '#f59e0b',
+  processing: colors.textMuted,
+};
+const STATUS_ICON: Record<string, string> = {
+  ok:         'check-circle',
+  pending:    'clock',
+  processing: 'loader',
+};
+
+function ChecklistSection({ bidId }: { bidId: string }) {
+  const { documents, progress, loading, error } = useChecklistViewModel(bidId);
+  const okCount = documents.filter(d => d.status === 'ok').length;
+
+  if (loading) {
+    return (
+      <View style={styles.checklistLoading}>
+        <ActivityIndicator size="small" color={colors.accent} />
+        <Text style={styles.checklistLoadingText}>Carregando checklist...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.checklistError}>
+        <Feather name="alert-circle" size={16} color={colors.danger} />
+        <Text style={styles.checklistErrorText}>{error}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.card}>
+      {/* Header com progresso */}
+      <View style={styles.checklistHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>Checklist de Habilitação</Text>
+          <Text style={styles.checklistSub}>
+            {okCount} de {documents.length} documentos prontos
+          </Text>
+        </View>
+        <View style={styles.progressBadge}>
+          <Text style={[styles.progressBadgeText, { color: progress === 100 ? colors.green : colors.accent }]}>
+            {progress}%
+          </Text>
+        </View>
+      </View>
+
+      {/* Barra de progresso */}
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${progress}%` as any }]} />
+      </View>
+
+      {/* Lista de documentos */}
+      <View style={{ gap: 8, marginTop: 4 }}>
+        {documents.map(doc => {
+          const iconColor = STATUS_COLOR[doc.status] ?? colors.textMuted;
+          const iconName = STATUS_ICON[doc.status] ?? 'file';
+          return (
+            <View key={doc.id} style={styles.checklistItem}>
+              <Feather name={iconName as any} size={16} color={iconColor} style={{ marginTop: 1 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.checklistItemTitle}>{doc.title}</Text>
+                <Text style={styles.checklistItemDesc} numberOfLines={1}>
+                  {doc.lastUpdated ? `Atualizado em ${doc.lastUpdated}` : doc.description}
+                </Text>
+              </View>
+              {doc.status === 'pending' && doc.actionUrl && (
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(doc.actionUrl!)}
+                  style={styles.emitirBtn}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.emitirBtnText}>Emitir</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -58,9 +146,7 @@ export default function EditalDetalheScreen() {
       return new Date(edital.data_publicacao_pncp).toLocaleDateString('pt-BR', {
         day: '2-digit', month: 'long', year: 'numeric',
       });
-    } catch {
-      return edital.data_publicacao_pncp;
-    }
+    } catch { return edital.data_publicacao_pncp; }
   })();
 
   const valorFmt = edital.valor_total_estimado != null
@@ -87,7 +173,7 @@ export default function EditalDetalheScreen() {
         <Text style={styles.title}>{edital.objeto_compra}</Text>
         <Text style={styles.dataPublicacao}>Publicado em {dataFmt}</Text>
 
-        {/* Valor destaque */}
+        {/* Valor */}
         <View style={styles.valorCard}>
           <View style={styles.valorCardHeader}>
             <View style={styles.valorIcon}>
@@ -98,6 +184,9 @@ export default function EditalDetalheScreen() {
           <Text style={styles.valorText}>{valorFmt}</Text>
           <Text style={styles.valorNote}>Pagamento garantido pelo governo.</Text>
         </View>
+
+        {/* Checklist de habilitação */}
+        <ChecklistSection bidId={edital._id} />
 
         {/* Informações gerais */}
         <View style={styles.card}>
@@ -133,96 +222,73 @@ export default function EditalDetalheScreen() {
 
 const styles = StyleSheet.create({
   center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingHorizontal: 32,
+    flex: 1, backgroundColor: colors.background, alignItems: 'center',
+    justifyContent: 'center', gap: 12, paddingHorizontal: 32,
   },
   loadingText: { fontSize: 16, color: colors.textMuted },
   errorText: { fontSize: 15, color: colors.text, textAlign: 'center', fontWeight: '600' },
   btnPrimary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.accent,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: colors.accent, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12,
   },
   btnPrimaryText: { fontSize: 14, fontWeight: '700', color: '#fff' },
   btnOutline: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12,
+    borderWidth: 1.5, borderColor: colors.border,
   },
   btnOutlineText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
   container: { paddingHorizontal: 20, gap: 16 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border,
   },
-  situacaoBadge: {
-    backgroundColor: '#d1fae5',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
+  situacaoBadge: { backgroundColor: '#d1fae5', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
   situacaoText: { fontSize: 12, fontWeight: '700', color: colors.green },
-  title: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: colors.primary,
-    lineHeight: 32,
-    letterSpacing: -0.5,
-  },
+  title: { fontSize: 24, fontWeight: '900', color: colors.primary, lineHeight: 32, letterSpacing: -0.5 },
   dataPublicacao: { fontSize: 13, color: colors.textMuted },
-  valorCard: {
-    backgroundColor: colors.accent,
-    borderRadius: 20,
-    padding: 20,
-    gap: 6,
-  },
+  valorCard: { backgroundColor: colors.accent, borderRadius: 20, padding: 20, gap: 6 },
   valorCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   valorIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center',
   },
   valorLabel: { fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.8)' },
   valorText: { fontSize: 30, fontWeight: '900', color: '#fff' },
   valorNote: { fontSize: 12, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic' },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    padding: 20,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: 20, padding: 20, gap: 12,
+    borderWidth: 1, borderColor: colors.border,
   },
   cardTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 4 },
   infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 12,
-    paddingVertical: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+    gap: 12, paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   infoLabel: { fontSize: 13, color: colors.textMuted, flex: 1 },
   infoValue: { fontSize: 13, fontWeight: '600', color: colors.text, flex: 2, textAlign: 'right' },
+  // Checklist
+  checklistHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  checklistSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  progressBadge: {
+    backgroundColor: colors.surfaceAlt, borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start',
+  },
+  progressBadgeText: { fontSize: 15, fontWeight: '900' },
+  progressTrack: {
+    height: 6, backgroundColor: colors.surfaceAlt, borderRadius: 3, overflow: 'hidden',
+  },
+  progressFill: { height: '100%', backgroundColor: colors.accent, borderRadius: 3 },
+  checklistItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  checklistItemTitle: { fontSize: 13, fontWeight: '700', color: colors.text },
+  checklistItemDesc: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  emitirBtn: {
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
+    borderWidth: 1.5, borderColor: colors.accent,
+  },
+  emitirBtnText: { fontSize: 11, fontWeight: '700', color: colors.accent },
+  checklistLoading: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16 },
+  checklistLoadingText: { fontSize: 13, color: colors.textMuted },
+  checklistError: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12 },
+  checklistErrorText: { fontSize: 13, color: colors.danger },
 });
