@@ -102,7 +102,7 @@ export default function LoginScreen() {
           <Button
             variant="secondary"
             style={styles.cnpjBtn}
-            onPress={() => router.replace('/(tabs)/dashboard')}
+            onPress={() => router.push('/(auth)/cnpj-login')}
           >
             <View style={styles.cnpjIcon}>
               <Feather name="briefcase" size={16} color="#fff" />

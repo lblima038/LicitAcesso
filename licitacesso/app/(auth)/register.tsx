@@ -27,12 +27,28 @@ export default function RegisterScreen() {
     try {
       setLoading(true);
       const authUser = await signInWithGoogle();
-      await login({
-        uid: authUser.uid,
-        displayName: authUser.name,
-        email: authUser.email,
-        photoURL: authUser.photoUrl,
+
+      // Troca idToken do Google pelo JWT interno do backend
+      let accessToken: string | undefined;
+      const res = await fetch('https://licitacessobackend.onrender.com/auth/firebase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: authUser.idToken }),
       });
+      if (res.ok) {
+        const data = await res.json();
+        accessToken = data.access_token;
+      }
+
+      await login(
+        {
+          uid: authUser.uid,
+          displayName: authUser.name,
+          email: authUser.email,
+          photoURL: authUser.photoUrl,
+        },
+        accessToken,
+      );
       router.replace('/(tabs)/dashboard');
     } catch (err: any) {
       if (err?.type === 'cancelled') return;
@@ -85,12 +101,14 @@ export default function RegisterScreen() {
           <View style={styles.dividerLine} />
         </View>
 
-        <View style={styles.infoCard}>
-          <Feather name="info" size={18} color={colors.accent} />
-          <Text style={styles.infoText}>
-            O cadastro com CNPJ está disponível para empresas já credenciadas. Entre em contato com nosso suporte.
-          </Text>
-        </View>
+        <TouchableOpacity
+          style={styles.cnpjButton}
+          onPress={() => router.push('/(auth)/cnpj-register')}
+          activeOpacity={0.85}
+        >
+          <Feather name="briefcase" size={20} color="#fff" />
+          <Text style={styles.cnpjButtonText}>Cadastrar com CNPJ</Text>
+        </TouchableOpacity>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Já tem uma conta? </Text>
@@ -125,15 +143,16 @@ const styles = StyleSheet.create({
   divider: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
   dividerText: { fontSize: 13, color: colors.textMuted, fontWeight: '500' },
-  infoCard: {
+  cnpjButton: {
     flexDirection: 'row',
-    gap: 12,
-    backgroundColor: '#dbeafe',
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    height: 56,
+    borderRadius: 99,
+    backgroundColor: colors.primary,
   },
-  infoText: { flex: 1, fontSize: 13, color: colors.accent, lineHeight: 20 },
+  cnpjButtonText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   footerText: { fontSize: 14, color: colors.textMuted },
   footerLink: { fontSize: 14, fontWeight: '700', color: colors.accent },

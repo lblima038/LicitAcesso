@@ -2,6 +2,44 @@ import { Bid } from '../domain/entities';
 
 const BASE_URL = 'https://licitacessobackend.onrender.com';
 
+// ─── Auth CNPJ ────────────────────────────────────────────────────────────────
+
+export interface CnpjAuthResponse {
+  access_token: string;
+  user: { id: string; name: string; email: string; cnpj?: string };
+}
+
+export async function loginWithCnpj(cnpj: string, senha: string): Promise<CnpjAuthResponse> {
+  const res = await fetch(`${BASE_URL}/auth/cnpj/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cnpj: cnpj.replace(/\D/g, ''), senha }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(err.message ?? `Erro ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function registerWithCnpj(dto: {
+  nomeEmpresa: string;
+  cnpj: string;
+  email: string;
+  senha: string;
+}): Promise<CnpjAuthResponse> {
+  const res = await fetch(`${BASE_URL}/auth/cnpj/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...dto, cnpj: dto.cnpj.replace(/\D/g, '') }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(err.message ?? `Erro ${res.status}`);
+  }
+  return res.json();
+}
+
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 
 function authHeaders(token: string) {

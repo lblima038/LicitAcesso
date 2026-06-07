@@ -32,10 +32,19 @@ export async function signInWithGoogle(): Promise<AuthUser> {
     throw { type: 'cancelled' } as AuthError;
   }
 
-  const tokens = await GoogleSignin.getTokens();
+  // response.data.idToken é mais confiável que getTokens() — getTokens pode retornar null
+  // se o serverClientId não está configurado ou o token expirou
+  let idToken = response.data.idToken;
+  if (!idToken) {
+    const tokens = await GoogleSignin.getTokens();
+    idToken = tokens.idToken;
+  }
+  if (!idToken) {
+    throw { type: 'unknown', message: 'Não foi possível obter o token do Google. Verifique a configuração do OAuth.' } as AuthError;
+  }
 
   return {
-    idToken: tokens.idToken,
+    idToken,
     uid: response.data.user.id,
     email: response.data.user.email ?? null,
     name: response.data.user.name ?? null,
