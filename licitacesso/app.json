@@ -20,7 +20,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#003d9b"
       },
-      "package": "br.com.licitacesso.app",
+      "package": "br.com.licitacesso.app"
     },
     "web": {
       "bundler": "metro",
@@ -49,13 +49,16 @@
       "typedRoutes": true
     },
     "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
       "backgroundColor": "#003d9b"
     },
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "55d5b137-6562-4ad2-9552-c85034c16a72"
+        "projectId": "92dec293-b6cc-4f56-bf19-ae187550a571"
       }
-    }
+    },
+    "owner": "arll3ssons-team"
   }
 }
