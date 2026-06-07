@@ -30,7 +30,7 @@ export default function LoginScreen() {
 
       // Troca o idToken do Firebase pelo JWT interno do backend
       let accessToken: string | undefined;
-      const backendUrl = API_BASE_URL || 'http://localhost:3000';
+      const backendUrl = API_BASE_URL || 'https://licitacessobackend.onrender.com';
       const res = await fetch(`${backendUrl}/auth/firebase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -1,6 +1,6 @@
 import { Bid } from '../domain/entities';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'https://licitacessobackend.onrender.com';
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 
