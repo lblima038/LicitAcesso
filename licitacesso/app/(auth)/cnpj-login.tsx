@@ -14,9 +14,9 @@ import {
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { colors } from '../../src/presentation/components';
-import { loginWithCnpj } from '../../src/data/apiService';
-import { useAppContext } from '../../src/context/AppContext';
+import { colors } from '@/src/presentation/components';
+import { loginWithCnpj } from '@/src/data/apiService';
+import { useAppContext } from '@/src/context/AppContext';
 
 function formatCnpj(value: string): string {
   const d = value.replace(/\D/g, '').slice(0, 14);
