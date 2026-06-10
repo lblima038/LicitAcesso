@@ -14,9 +14,9 @@ import {
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { colors } from '../../src/presentation/components';
-import { signInWithGoogle } from '../../src/data/authService';
-import { useAppContext } from '../../src/context/AppContext';
+import { colors } from '@/src/presentation/components';
+import { signInWithGoogle } from '@/src/data/authService';
+import { useAppContext } from '@/src/context/AppContext';
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();

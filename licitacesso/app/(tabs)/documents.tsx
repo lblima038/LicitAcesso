@@ -11,9 +11,9 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, ScreenLayout } from '../../src/presentation/components';
-import { useAppContext } from '../../src/context/AppContext';
-import { UploadedDocument, DocumentUploadStatus } from '../../src/domain/entities';
+import { colors, ScreenLayout } from '@/src/presentation/components';
+import { useAppContext } from '@/src/context/AppContext';
+import { UploadedDocument, DocumentUploadStatus } from '@/src/domain/entities';
 
 let _pickDocument: (() => Promise<{ uri: string; name: string; mimeType: string; size?: number } | null>) | null = null;
 try {

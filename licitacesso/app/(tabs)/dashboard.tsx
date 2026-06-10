@@ -11,10 +11,10 @@ import {
   AreaCard,
   formatBRL,
   ScreenLayout,
-} from '../../src/presentation/components';
-import { useDashboardViewModel } from '../../src/presentation/viewmodels';
-import { useAppContext } from '../../src/context/AppContext';
-import { Proposal, ProposalStatus } from '../../src/domain/entities';
+} from '@/src/presentation/components';
+import { useDashboardViewModel } from '@/src/presentation/viewmodels';
+import { useAppContext } from '@/src/context/AppContext';
+import { Proposal, ProposalStatus } from '@/src/domain/entities';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

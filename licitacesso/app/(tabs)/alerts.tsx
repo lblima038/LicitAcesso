@@ -9,10 +9,10 @@ import {
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, ScreenLayout } from '../../src/presentation/components';
-import { useAppContext } from '../../src/context/AppContext';
-import { AppAlert, AlertType } from '../../src/domain/entities';
-import { ApiFavorite } from '../../src/data/apiService';
+import { colors, ScreenLayout } from '@/src/presentation/components';
+import { useAppContext } from '@/src/context/AppContext';
+import { AppAlert, AlertType } from '@/src/domain/entities';
+import { ApiFavorite } from '@/src/data/apiService';
 
 const ALERT_CFG: Record<AlertType, { icon: string; bg: string; fg: string }> = {
   novo_edital:  { icon: 'file-plus',  bg: '#dbeafe', fg: colors.accent },

@@ -11,9 +11,9 @@ import {
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { colors, Button } from '../../src/presentation/components';
-import { signInWithGoogle, statusCodes } from '../../src/data/authService';
-import { useAppContext } from '../../src/context/AppContext';
+import { colors, Button } from '@/src/presentation/components';
+import { signInWithGoogle, statusCodes } from '@/src/data/authService';
+import { useAppContext } from '@/src/context/AppContext';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
