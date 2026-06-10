@@ -250,24 +250,24 @@ export function AppContextProvider({ children }: { children: React.ReactNode }) 
   }, [token]);
 
   const toggleFavorite = useCallback(async (edital: Omit<ApiFavorite, 'id' | 'createdAt'>) => {
-    if (!token) return;
     const isFav = favorites.some(f => f.bidId === edital.bidId);
     if (isFav) {
-      // Otimista: remove imediatamente
       setFavorites(prev => prev.filter(f => f.bidId !== edital.bidId));
-      try { await apiRemoveFavorite(edital.bidId, token); } catch {
-        // Reverte se falhar
-        setFavorites(prev => [...prev, { ...edital, id: '', createdAt: '' }]);
+      if (token) {
+        try { await apiRemoveFavorite(edital.bidId, token); } catch {
+          setFavorites(prev => [...prev, { ...edital, id: '', createdAt: '' }]);
+        }
       }
     } else {
-      // Otimista: adiciona imediatamente com id temporário
       const temp: ApiFavorite = { ...edital, id: `tmp_${edital.bidId}`, createdAt: new Date().toISOString() };
       setFavorites(prev => [temp, ...prev]);
-      try {
-        const created = await apiAddFavorite(edital, token);
-        setFavorites(prev => prev.map(f => f.id === temp.id ? created : f));
-      } catch {
-        setFavorites(prev => prev.filter(f => f.id !== temp.id));
+      if (token) {
+        try {
+          const created = await apiAddFavorite(edital, token);
+          setFavorites(prev => prev.map(f => f.id === temp.id ? created : f));
+        } catch {
+          setFavorites(prev => prev.filter(f => f.id !== temp.id));
+        }
       }
     }
   }, [token, favorites]);

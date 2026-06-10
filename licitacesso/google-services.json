@@ -1,36 +1,26 @@
 {
   "project_info": {
-    "project_number": "140995094807",
-    "project_id": "next-talent-429fd",
-    "storage_bucket": "next-talent-429fd.firebasestorage.app"
+    "project_number": "158211711288",
+    "project_id": "licitacesso",
+    "storage_bucket": "licitacesso.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:140995094807:android:09e11c8c2cf946a2f26f52",
+        "mobilesdk_app_id": "1:158211711288:android:a2589fb8fbe4b39d8f61cd",
         "android_client_info": {
           "package_name": "br.com.licitacesso.app"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "140995094807-h0q9ctb0efr9knk5a4u19ktjoa0vj3ft.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB9pgaGvq-l6LrSkRwCOD69zCGOYN9UW7w"
+          "current_key": "AIzaSyAsDq88d92NckSJGvmBUzm8o17l1s1x9uw"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "140995094807-h0q9ctb0efr9knk5a4u19ktjoa0vj3ft.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

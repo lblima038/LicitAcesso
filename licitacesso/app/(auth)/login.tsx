@@ -54,14 +54,16 @@ export default function LoginScreen() {
 
       router.replace('/(tabs)/dashboard');
     } catch (error: unknown) {
-      const e = error as { type?: string; code?: string };
+      const e = error as { type?: string; code?: string | number; message?: string };
+      console.log('[Google Login Error]', JSON.stringify(e));
       if (e?.type === 'cancelled') return;
       if (e?.code === statusCodes.IN_PROGRESS) return;
       if (e?.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         Alert.alert('Erro', 'Google Play Services não disponível neste dispositivo.');
         return;
       }
-      Alert.alert('Erro no login', 'Não foi possível entrar com Google. Tente novamente.');
+      const detail = e?.message ?? (e?.code ? `código ${e.code}` : 'erro desconhecido');
+      Alert.alert('Erro no login', `Não foi possível entrar com Google.\n\n${detail}`);
     } finally {
       setLoading(false);
     }
@@ -112,6 +114,16 @@ export default function LoginScreen() {
           </Button>
         </View>
 
+        <TouchableOpacity
+          style={styles.devBtn}
+          onPress={async () => {
+            await login({ uid: 'dev-user', displayName: 'Usuário Teste', email: 'teste@licitacesso.com', photoURL: null });
+            router.replace('/(tabs)/dashboard');
+          }}
+        >
+          <Text style={styles.devBtnText}>⚡ Entrar como visitante (dev)</Text>
+        </TouchableOpacity>
+
         <View style={styles.footer}>
           <Text style={styles.footerText}>Não tem uma conta? </Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
@@ -156,6 +168,8 @@ const styles = StyleSheet.create({
   cnpjBtn: { width: '100%', paddingVertical: 16, borderRadius: 99, flexDirection: 'row', alignItems: 'center', gap: 12 },
   cnpjIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   cnpjBtnText: { fontSize: 15, fontWeight: '700', color: colors.green },
+  devBtn: { alignItems: 'center', paddingVertical: 10 },
+  devBtnText: { fontSize: 13, color: colors.textMuted, textDecorationLine: 'underline' },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   footerText: { fontSize: 14, color: colors.textMuted },
   footerLink: { fontSize: 14, fontWeight: '700', color: colors.accent },

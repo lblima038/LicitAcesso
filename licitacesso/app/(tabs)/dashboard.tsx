@@ -210,7 +210,7 @@ export default function DashboardScreen() {
             <Text style={styles.loadingText}>Carregando...</Text>
           ) : (
             topEstados.map((item, i) => (
-              <EstadoCard key={item.uf} item={item} maxValor={maxEstadoValor} rank={i + 1} />
+              <EstadoCard key={`${item.uf}_${i}`} item={item} maxValor={maxEstadoValor} rank={i + 1} />
             ))
           )}
         </View>
@@ -230,7 +230,7 @@ export default function DashboardScreen() {
             <Text style={styles.loadingText}>Carregando...</Text>
           ) : (
             topAreas.map((item, i) => (
-              <AreaCard key={item.ramo_mei} item={item} maxValor={maxAreaValor} rank={i + 1} />
+              <AreaCard key={`${item.ramo_mei}_${i}`} item={item} maxValor={maxAreaValor} rank={i + 1} />
             ))
           )}
         </View>

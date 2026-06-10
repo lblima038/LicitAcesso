@@ -1,6 +1,6 @@
 import { Bid } from '../domain/entities';
 
-const BASE_URL = 'https://licitacessobackend.onrender.com';
+const BASE_URL = 'http://192.168.1.4:3000';
 
 // ─── Auth CNPJ ────────────────────────────────────────────────────────────────
 
