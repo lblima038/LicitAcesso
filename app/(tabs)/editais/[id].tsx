@@ -11,7 +11,7 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../../src/presentation/components';
+import { colors, situacaoStyle } from '../../../src/presentation/components';
 import { useEditalDetalheViewModel, useChecklistViewModel } from '../../../src/presentation/viewmodels';
 
 function InfoRow({ label, value }: { label: string; value?: string | number }) {
@@ -164,8 +164,8 @@ export default function EditalDetalheScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
             <Feather name="arrow-left" size={22} color={colors.text} />
           </TouchableOpacity>
-          <View style={styles.situacaoBadge}>
-            <Text style={styles.situacaoText}>{edital.situacao_nome ?? '—'}</Text>
+          <View style={[styles.situacaoBadge, { backgroundColor: situacaoStyle(edital.situacao_nome).bg }]}>
+            <Text style={[styles.situacaoText, { color: situacaoStyle(edital.situacao_nome).fg }]}>{edital.situacao_nome ?? '—'}</Text>
           </View>
         </View>
 

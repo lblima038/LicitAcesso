@@ -14,9 +14,9 @@ import {
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { colors } from '../../src/presentation/components';
-import { signInWithGoogle } from '../../src/data/authService';
-import { useAppContext } from '../../src/context/AppContext';
+import { colors } from '@/src/presentation/components';
+import { signInWithGoogle } from '@/src/data/authService';
+import { useAppContext } from '@/src/context/AppContext';
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
@@ -30,7 +30,8 @@ export default function RegisterScreen() {
 
       // Troca idToken do Google pelo JWT interno do backend
       let accessToken: string | undefined;
-      const res = await fetch('https://licitacessobackend.onrender.com/auth/firebase', {
+      const backendUrl = process.env.EXPO_PUBLIC_API_URL || 'https://licitacessobackend.onrender.com';
+      const res = await fetch(`${backendUrl}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken: authUser.idToken }),

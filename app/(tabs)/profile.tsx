@@ -11,8 +11,8 @@ import {
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, ScreenLayout } from '../../src/presentation/components';
-import { useAppContext } from '../../src/context/AppContext';
+import { colors, ScreenLayout } from '@/src/presentation/components';
+import { useAppContext } from '@/src/context/AppContext';
 
 export default function ProfileTabScreen() {
   const insets = useSafeAreaInsets();
@@ -36,6 +36,7 @@ export default function ProfileTabScreen() {
         onPress: async () => {
           try {
             await logout();
+            router.replace('/(auth)/login');
           } catch {
             Alert.alert('Erro', 'Não foi possível sair. Tente novamente.');
           }
