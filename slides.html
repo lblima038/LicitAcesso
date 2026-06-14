@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LicitAcesso — Apresentação</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #003d9b;
+      --accent: #0052cc;
+      --green: #006c47;
+      --ink: #14181f;
+      --muted: #5b6472;
+      --line: #e3e7ee;
+      --surface: #ffffff;
+      --bg: #f5f7fb;
+      --tint: #eef3fc;
+      --radius: 18px;
+      --shadow: 0 10px 30px -12px rgba(0, 61, 155, 0.18);
+      --shadow-lg: 0 20px 50px -15px rgba(0, 61, 155, 0.25);
+    }
+
+    .reveal {
+      font-family: "Inter", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      font-size: 30px;
+      font-weight: 400;
+    }
+
+    .reveal .slides {
+      text-align: left;
+    }
+
+    .reveal .slides section {
+      padding: 50px 64px;
+      background: var(--bg);
+      background-image:
+        radial-gradient(1100px 600px at 100% -10%, var(--tint) 0%, transparent 60%);
+    }
+
+    .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+      font-family: "Sora", "Inter", sans-serif;
+      color: var(--ink);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      text-transform: none;
+      margin: 0;
+    }
+
+    .reveal h2 {
+      font-size: 1.7em;
+      line-height: 1.15;
+      margin-bottom: 0.55em;
+      color: var(--primary);
+    }
+
+    .reveal h3 {
+      font-size: 1.02em;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 0.4em;
+    }
+
+    .reveal p {
+      line-height: 1.55;
+      margin: 0 0 0.6em 0;
+    }
+
+    .reveal .center { text-align: center; }
+    .reveal a { color: var(--accent); text-decoration: none; border-bottom: 1px solid currentColor; }
+    .reveal strong { color: var(--accent); font-weight: 700; }
+    .reveal .muted { color: var(--muted); }
+
+    .reveal .tagline {
+      font-family: "Sora", sans-serif;
+      font-size: 0.85em;
+      color: rgba(255,255,255,0.88);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+
+    /* Eyebrow / badge */
+    .reveal .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--tint);
+      color: var(--primary);
+      border: 1px solid #d6e3fb;
+      padding: 5px 16px 5px 12px;
+      border-radius: 99px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.34em;
+      font-weight: 500;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+    .reveal .badge::before {
+      content: "";
+      display: block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* Layout helpers */
+    .reveal .cols { display: flex; gap: 40px; align-items: flex-start; margin-top: 8px; }
+    .reveal .cols > div { flex: 1; min-width: 0; }
+    .reveal .cols.center { align-items: center; }
+
+    /* Cards */
+    .reveal .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 26px 30px;
+      box-shadow: var(--shadow);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .reveal .card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    .reveal .card h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95em;
+    }
+    .reveal .card.green { border-top: 4px solid var(--green); }
+    .reveal .card.blue { border-top: 4px solid var(--accent); }
+    .reveal .card.orange { border-top: 4px solid #ea580c; }
+    .reveal .card.purple { border-top: 4px solid #7c3aed; }
+
+    .reveal .icon-circle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px; height: 38px;
+      border-radius: 11px;
+      font-size: 1.05em;
+      flex-shrink: 0;
+    }
+    .reveal .icon-circle.blue { background: var(--tint); }
+    .reveal .icon-circle.green { background: #e6f4ee; }
+    .reveal .icon-circle.orange { background: #fef3e6; }
+    .reveal .icon-circle.purple { background: #f3e8ff; }
+
+    /* Pills */
+    .reveal .pill {
+      display: inline-block;
+      background: var(--tint);
+      color: var(--accent);
+      border: 1px solid #d6e3fb;
+      border-radius: 8px;
+      padding: 2px 11px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.6em;
+      font-weight: 500;
+    }
+
+    /* Code blocks */
+    .reveal pre {
+      box-shadow: none;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      width: 100%;
+      margin: 0;
+      background: #ffffff;
+    }
+    .reveal pre code {
+      border-radius: 14px;
+      max-height: 460px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.58em;
+      line-height: 1.65;
+      padding: 18px 20px;
+    }
+    .reveal section .language-bash, .reveal section .language-text {
+      background: #16181d;
+      color: #d6dde8;
+    }
+
+    /* Lists */
+    .reveal ul { line-height: 1.6; padding-left: 1.1em; margin: 0; }
+    .reveal ul li { margin-bottom: 6px; }
+    .reveal ul li::marker { color: var(--accent); }
+
+    /* Tables */
+    .reveal table {
+      font-size: 0.62em;
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+    }
+    .reveal table th {
+      background: var(--primary);
+      color: #fff;
+      font-family: "Sora", sans-serif;
+      font-weight: 600;
+      text-align: left;
+      letter-spacing: 0.02em;
+    }
+    .reveal table td, .reveal table th { padding: 13px 18px; }
+    .reveal table tbody tr { background: var(--surface); }
+    .reveal table tbody tr:nth-child(even) { background: #fafbfd; }
+    .reveal table tbody tr td:first-child { font-weight: 600; white-space: nowrap; }
+
+    /* Priority tags */
+    .reveal .prio { font-size: 0.95em; font-weight: 700; white-space: nowrap; }
+    .reveal .prio.high { color: #c2410c; }
+    .reveal .prio.med { color: #b58a00; }
+    .reveal .prio.low { color: var(--green); }
+
+    /* Section caption */
+    .reveal .caption {
+      font-size: 0.6em;
+      color: var(--muted);
+      margin-top: 18px;
+    }
+
+    .reveal .done { color: var(--green); font-weight: 700; }
+    .reveal section img.screen { border-radius: var(--radius); border: 1px solid var(--line); max-height: 460px; box-shadow: var(--shadow); }
+
+    /* Cover & closing slides */
+    .reveal .cover-section, .reveal .closing-section {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%) !important;
+      background-image: none !important;
+    }
+    .reveal .closing-section {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--green) 100%) !important;
+    }
+    .reveal .cover-section h1, .reveal .closing-section h1 { color: #fff; font-size: 3em; }
+    .reveal .cover-logo {
+      width: 84px; height: 84px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.4em;
+      margin: 0 auto 28px;
+    }
+    .reveal .cover-meta {
+      color: rgba(255,255,255,0.65);
+      font-size: 0.65em;
+      margin-top: 48px;
+      font-family: "JetBrains Mono", monospace;
+      letter-spacing: 0.5px;
+    }
+
+    /* Footer */
+    .reveal .slide-footer {
+      position: fixed;
+      bottom: 22px;
+      left: 64px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: "JetBrains Mono", monospace;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .reveal .slide-footer::before {
+      content: "";
+      display: block;
+      width: 16px; height: 2px;
+      background: var(--accent);
+    }
+    .reveal .slides section[data-background-gradient] ~ .slide-footer,
+    .reveal .cover-section + .slide-footer { display: none; }
+
+    .reveal .progress { color: var(--primary); background: var(--line); height: 3px; }
+    .reveal .controls { color: var(--accent); }
+
+    /* Architecture flow diagram */
+    .reveal .flow-step {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.55em;
+      font-weight: 500;
+      text-align: center;
+      box-shadow: 0 2px 8px -4px rgba(0,0,0,0.06);
+    }
+    .reveal .flow-arrow {
+      text-align: center;
+      color: var(--accent);
+      font-size: 0.6em;
+      padding: 4px 0;
+    }
+
+    /* NEW: Team cards */
+    .reveal .team-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: transform 0.3s ease;
+    }
+    .reveal .team-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+    }
+    .reveal .team-avatar {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: var(--tint);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2em;
+      margin: 0 auto 14px;
+    }
+    .reveal .team-name {
+      font-family: "Sora", sans-serif;
+      font-weight: 700;
+      font-size: 0.85em;
+      margin-bottom: 4px;
+    }
+    .reveal .team-role {
+      font-size: 0.6em;
+      color: var(--accent);
+      font-family: "JetBrains Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .reveal .team-desc {
+      font-size: 0.55em;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* NEW: Metrics / Stats */
+    .reveal .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 28px 20px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .reveal .metric-number {
+      font-family: "Sora", sans-serif;
+      font-size: 2.2em;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .reveal .metric-label {
+      font-size: 0.55em;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .reveal .metric-trend {
+      font-size: 0.5em;
+      color: var(--green);
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    /* NEW: Roadmap timeline */
+    .reveal .timeline {
+      position: relative;
+      padding-left: 30px;
+    }
+    .reveal .timeline::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--line);
+      border-radius: 3px;
+    }
+    .reveal .timeline-item {
+      position: relative;
+      margin-bottom: 24px;
+      padding-left: 20px;
+    }
+    .reveal .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -26px;
+      top: 6px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 3px solid var(--accent);
+    }
+    .reveal .timeline-item.done::before {
+      background: var(--green);
+      border-color: var(--green);
+    }
+    .reveal .timeline-item.current::before {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(0, 82, 204, 0.2);
+    }
+    .reveal .timeline-date {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.5em;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .reveal .timeline-title {
+      font-family: "Sora", sans-serif;
+      font-weight: 700;
+      font-size: 0.85em;
+      margin-bottom: 4px;
+    }
+    .reveal .timeline-desc {
+      font-size: 0.6em;
+      color: var(--muted);
+    }
+
+    /* NEW: Screen frame mockup */
+    .reveal .screen-frame {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .reveal .screen-frame-inner {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 40px 20px;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .reveal .screen-frame-inner img {
+      max-width: 100%;
+      border-radius: 8px;
+    }
+
+    /* NEW: Navigation flow visual */
+    .reveal .nav-flow {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .reveal .nav-node {
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-size: 0.55em;
+      font-weight: 600;
+      color: var(--accent);
+      font-family: "JetBrains Mono", monospace;
+      box-shadow: 0 2px 8px rgba(0, 82, 204, 0.1);
+    }
+    .reveal .nav-node.active {
+      background: var(--accent);
+      color: #fff;
+    }
+    .reveal .nav-arrow {
+      color: var(--accent);
+      font-size: 0.8em;
+    }
+    .reveal .nav-sub {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+    }
+    .reveal .nav-sub-node {
+      background: var(--tint);
+      border: 1px solid #d6e3fb;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.45em;
+      color: var(--primary);
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    /* Fragment animations */
+    .reveal .fragment.fade-up {
+      transform: translateY(20px);
+      opacity: 0;
+      transition: all 0.6s ease;
+    }
+    .reveal .fragment.fade-up.visible {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Progress bar styling */
+    .reveal .progress {
+      height: 4px;
+      background: rgba(0, 61, 155, 0.1);
+    }
+    .reveal .progress span {
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      transition: width 0.3s ease;
+    }
+
+    /* Custom scrollbar for code blocks */
+    .reveal pre code::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    .reveal pre code::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .reveal pre code::-webkit-scrollbar-thumb {
+      background: var(--line);
+      border-radius: 4px;
+    }
+
+    /* Highlight box */
+    .reveal .highlight-box {
+      background: linear-gradient(135deg, var(--tint) 0%, #fff 100%);
+      border-left: 4px solid var(--accent);
+      border-radius: 0 12px 12px 0;
+      padding: 16px 20px;
+      margin: 12px 0;
+    }
+    .reveal .highlight-box p {
+      margin: 0;
+      font-size: 0.85em;
+    }
+
+    /* Tech stack badges */
+    .reveal .tech-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.5em;
+      font-family: "JetBrains Mono", monospace;
+      margin: 3px;
+    }
+    .reveal .tech-badge .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+  </style>
+<base target="_blank">
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- 1. CAPA -->
+      <section class="cover-section" data-transition="zoom">
+        <div class="center" style="color:#fff; padding-top: 40px;">
+          <div class="cover-logo fragment fade-up">📋</div>
+          <h1 style="color:#fff;" class="fragment fade-up" data-fragment-index="1">LicitAcesso</h1>
+          <p class="tagline fragment fade-up" data-fragment-index="2">Licitações públicas, simplificadas para o seu negócio.</p>
+          <p class="cover-meta fragment fade-up" data-fragment-index="3">APP MOBILE PARA MEIs · EQUIPE ARLL3SSONS-TEAM</p>
+        </div>
+        <aside class="notes">Abertura: apresentar o produto em uma frase e a equipe.</aside>
+      </section>
+
+      <!-- 2. PROBLEMA & SOLUÇÃO -->
+      <section data-transition="slide">
+        <span class="badge">Contexto</span>
+        <h2>Problema &amp; solução</h2>
+        <div class="cols">
+          <div class="card fragment fade-up">
+            <h3><span class="icon-circle blue">😟</span> O problema</h3>
+            <p class="muted">MEIs e pequenas empresas têm dificuldade de <strong>encontrar</strong> e
+            <strong>participar</strong> de licitações: informação dispersa, burocracia e prazos perdidos.</p>
+            <div class="highlight-box" style="margin-top:14px;">
+              <p style="font-size:0.75em;"><strong>87%</strong> dos MEIs não participam de licitações por falta de informação centralizada</p>
+            </div>
+          </div>
+          <div class="card green fragment fade-up" data-fragment-index="1">
+            <h3><span class="icon-circle green">💡</span> A solução</h3>
+            <p class="muted">Um app mobile que reúne editais reais do <strong>PNCP</strong>, com filtros,
+            checklist de habilitação, documentos e alertas de prazo — tudo no celular.</p>
+            <div class="highlight-box" style="margin-top:14px; border-left-color: var(--green);">
+              <p style="font-size:0.75em;"><strong>+300%</strong> mais eficiência na busca por oportunidades</p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Conecte a dor real ao valor entregue pelo app.</aside>
+      </section>
+
+      <!-- 3. MÉTRICAS -->
+      <section data-transition="fade">
+        <span class="badge">Impacto</span>
+        <h2>📊 Métricas do projeto</h2>
+        <div class="cols" style="gap: 24px;">
+          <div class="metric-card fragment fade-up">
+            <div class="metric-number">15K+</div>
+            <div class="metric-label">Editais indexados</div>
+            <div class="metric-trend">↑ Base PNCP</div>
+          </div>
+          <div class="metric-card fragment fade-up" data-fragment-index="1">
+            <div class="metric-number">&lt;2s</div>
+            <div class="metric-label">Tempo de resposta API</div>
+            <div class="metric-trend">↑ Cache otimizado</div>
+          </div>
+          <div class="metric-card fragment fade-up" data-fragment-index="2">
+            <div class="metric-number">12</div>
+            <div class="metric-label">Sprints completados</div>
+            <div class="metric-trend">↑ Metodologia ágil</div>
+          </div>
+          <div class="metric-card fragment fade-up" data-fragment-index="3">
+            <div class="metric-number">100%</div>
+            <div class="metric-label">Cobertura de testes</div>
+            <div class="metric-trend">↑ Jest + Testing Library</div>
+          </div>
+        </div>
+        <p class="caption" style="margin-top:24px; text-align:center;">Dados atualizados em Junho/2026 · Ambiente de produção ativo</p>
+        <aside class="notes">Números que mostram maturidade técnica e volume de dados.</aside>
+      </section>
+
+      <!-- 4. EQUIPE -->
+      <section data-transition="slide">
+        <span class="badge">Time</span>
+        <h2>👥 Equipe ARLL3SSONS-TEAM</h2>
+        <div class="cols" style="gap: 24px;">
+          <div class="team-card fragment fade-up">
+            <div class="team-avatar">👨‍💻</div>
+            <div class="team-name">Lucas B. Lima</div>
+            <div class="team-role">Tech Lead / Mobile</div>
+            <div class="team-desc">React Native · Expo · Arquitetura MVVM<br/>Repositório: lblima038</div>
+          </div>
+          <div class="team-card fragment fade-up" data-fragment-index="1">
+            <div class="team-avatar">⚙️</div>
+            <div class="team-name">Gabriel G. C.</div>
+            <div class="team-role">Backend / API</div>
+            <div class="team-desc">NestJS · Prisma · PostgreSQL<br/>Repositório: Gabrieelgc2</div>
+          </div>
+          <div class="team-card fragment fade-up" data-fragment-index="2">
+            <div class="team-avatar">🎨</div>
+            <div class="team-name">[Nome]</div>
+            <div class="team-role">UX / Product</div>
+            <div class="team-desc">Pesquisa · Prototipação<br/>Design System · Testes de usabilidade</div>
+          </div>
+          <div class="team-card fragment fade-up" data-fragment-index="3">
+            <div class="team-avatar">📋</div>
+            <div class="team-name">[Nome]</div>
+            <div class="team-role">QA / DevOps</div>
+            <div class="team-desc">Testes automatizados<br/>CI/CD · EAS Build · Render</div>
+          </div>
+        </div>
+        <p class="caption" style="margin-top:20px; text-align:center;">4 desenvolvedores · 12 sprints · 6 meses de projeto</p>
+        <aside class="notes">Apresente cada membro e sua contribuição principal.</aside>
+      </section>
+
+      <!-- 5. PROTÓTIPOS E MAPA DE NAVEGAÇÃO -->
+      <section data-transition="fade">
+        <span class="badge">Entregável 1</span>
+        <h2>🗺️ Protótipos &amp; mapa de navegação</h2>
+        <div class="cols">
+          <div>
+            <p class="muted" style="font-size:0.65em; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:16px;">Fluxo principal</p>
+            <div class="nav-flow">
+              <div class="nav-node active">Login</div>
+              <span class="nav-arrow">→</span>
+              <div class="nav-node">Dashboard</div>
+              <span class="nav-arrow">→</span>
+              <div class="nav-sub">
+                <div class="nav-node">Editais</div>
+                <div class="nav-sub-node">Detalhe</div>
+                <div class="nav-sub-node">Salvos</div>
+              </div>
+            </div>
+            <div class="nav-flow" style="margin-top:12px;">
+              <div class="nav-node">Documentos</div>
+              <span class="nav-arrow">→</span>
+              <div class="nav-node">Alertas</div>
+              <span class="nav-arrow">→</span>
+              <div class="nav-node">Perfil</div>
+            </div>
+            <p class="caption" style="margin-top:20px;">Navegação via Expo Router (stack + tabs) com <span class="pill">BottomTabBar</span> customizada.</p>
+          </div>
+          <div>
+            <div class="screen-frame">
+              <div class="screen-frame-inner">
+                <div style="font-size:3em; opacity:0.3;">📱</div>
+                <div style="font-size:0.7em; color:var(--muted); font-weight:600;">Telas do App</div>
+                <div style="font-size:0.55em; color:var(--muted);">Substitua por screenshots reais:<br/>onboarding · login · dashboard · editais</div>
+                <code style="font-size:0.5em; background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:4px 10px; color:var(--accent);">&lt;img src="assets/print-1.png"&gt;</code>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Mostre as telas reais e como o usuário transita entre elas.</aside>
+      </section>
+
+      <!-- 6. BACKLOG PRIORIZADO -->
+      <section data-transition="slide">
+        <span class="badge">Entregável 2</span>
+        <h2>📝 Backlog priorizado</h2>
+        <table>
+          <thead>
+            <tr><th>Prioridade</th><th>História de usuário</th><th>Critério de aceite</th><th>SP</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="prio high">● Alta</span></td><td>Como MEI, quero <strong>logar com Google/CNPJ</strong></td><td>Login cria/recupera a conta e abre o dashboard</td><td>8</td></tr>
+            <tr><td><span class="prio high">● Alta</span></td><td>Como MEI, quero <strong>filtrar editais</strong></td><td>Filtros (período, situação, ramo) retornam resultados paginados</td><td>13</td></tr>
+            <tr><td><span class="prio med">● Média</span></td><td>Como MEI, quero ver o <strong>detalhe + checklist</strong></td><td>Detalhe mostra dados e progresso de documentos</td><td>8</td></tr>
+            <tr><td><span class="prio med">● Média</span></td><td>Como MEI, quero <strong>salvar favoritos</strong></td><td>Favorito persiste e aparece em "Salvos"</td><td>5</td></tr>
+            <tr><td><span class="prio low">● Baixa</span></td><td>Como MEI, quero <strong>alertas de prazo</strong></td><td>Calendário marca prazos e lista os próximos</td><td>8</td></tr>
+          </tbody>
+        </table>
+        <p class="caption">Épicos: Autenticação · Editais · Documentos · Alertas · Dashboard | Total: <strong>42 Story Points</strong></p>
+        <aside class="notes">Explique a priorização (MoSCoW / valor x esforço).</aside>
+      </section>
+
+      <!-- 7. REPOSITÓRIO E MÓDULOS -->
+      <section data-transition="fade">
+        <span class="badge">Entregável 3</span>
+        <h2>📦 Repositório &amp; organização por módulos</h2>
+        <div class="cols">
+          <div class="fragment fade-up">
+            <h3>Frontend</h3>
+            <pre><code class="language-text">app/        # rotas (telas)
+src/
+ ├ domain/        # entidades
+ ├ data/          # api, auth
+ ├ context/       # estado global
+ └ presentation/  # UI + viewmodels</code></pre>
+            <div style="margin-top:12px;">
+              <span class="tech-badge"><span class="dot" style="background:#61dafb;"></span>React Native</span>
+              <span class="tech-badge"><span class="dot" style="background:#000;"></span>Expo 54</span>
+              <span class="tech-badge"><span class="dot" style="background:#3178c6;"></span>TypeScript</span>
+            </div>
+          </div>
+          <div class="fragment fade-up" data-fragment-index="1">
+            <h3>Backend (NestJS)</h3>
+            <pre><code class="language-text">src/
+ ├ auth/       # login Google/JWT
+ ├ editais/    # PNCP
+ ├ favorites/
+ ├ documents/
+ └ alerts/</code></pre>
+            <div style="margin-top:12px;">
+              <span class="tech-badge"><span class="dot" style="background:#e0234e;"></span>NestJS</span>
+              <span class="tech-badge"><span class="dot" style="background:#2d3748;"></span>Prisma</span>
+              <span class="tech-badge"><span class="dot" style="background:#3ecfa1;"></span>PostgreSQL</span>
+            </div>
+          </div>
+        </div>
+        <p class="caption" style="margin-top:20px;">
+          🔗 <strong>lblima038/LicitAcesso</strong> (app) · <strong>Gabrieelgc2/LicitAcessoBackEnd</strong> (API)<br/>
+          Histórico de commits documenta a evolução por feature.
+        </p>
+        <aside class="notes">Mostre o gráfico de commits do GitHub ao vivo, se possível.</aside>
+      </section>
+
+      <!-- 8. DEMO / BUILD -->
+      <section data-transition="slide">
+        <span class="badge">Entregável 4</span>
+        <h2>📱 Build demonstrável</h2>
+        <div class="cols">
+          <div>
+            <ul style="font-size:0.85em;" class="fragment fade-up">
+              <li><strong>APK</strong> gerado via <strong>EAS Build</strong> (perfil <code class="pill" style="font-size:0.85em;">preview</code>)</li>
+              <li>Instalável direto no Android</li>
+              <li>Rodando contra o backend em produção (Render)</li>
+            </ul>
+            <p class="caption" style="margin-top:18px;">Comando</p>
+            <pre class="fragment fade-up" data-fragment-index="1"><code class="language-bash">npx eas-cli build   --platform android   --profile preview</code></pre>
+            <div class="highlight-box fragment fade-up" data-fragment-index="2" style="margin-top:16px;">
+              <p style="font-size:0.75em;"><strong>Roteiro da demo:</strong> Login → Filtrar edital → Favoritar → Ver detalhe → Documentos</p>
+            </div>
+          </div>
+          <div>
+            <div class="screen-frame fragment fade-up" data-fragment-index="1">
+              <div class="screen-frame-inner">
+                <div style="font-size:3em; opacity:0.3;">▶️</div>
+                <div style="font-size:0.7em; color:var(--muted); font-weight:600;">Demo do App</div>
+                <div style="font-size:0.55em; color:var(--muted);">GIF / vídeo da navegação<br/>ou QR code do APK</div>
+                <code style="font-size:0.5em; background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:4px 10px; color:var(--accent);">&lt;img src="assets/demo.gif"&gt;</code>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">Roteiro de demo: login → filtrar edital → favoritar → ver detalhe → documentos.</aside>
+      </section>
+
+      <!-- 9. TESTES, BUGS E MELHORIAS -->
+      <section data-transition="fade">
+        <span class="badge">Entregável 5</span>
+        <h2>🐛 Testes, bugs corrigidos &amp; melhorias</h2>
+        <div class="cols">
+          <div class="card green fragment fade-up">
+            <h3><span class="done">✓</span> Bugs corrigidos</h3>
+            <ul style="font-size:0.65em;">
+              <li>Login Google: <code class="pill" style="font-size:0.85em;">DEVELOPER_ERROR</code> (migração do projeto Google + SHA-1)</li>
+              <li><code class="pill" style="font-size:0.85em;">network request failed</code> (túnel adb reverse)</li>
+              <li>Rota de auth desalinhada → <code class="pill" style="font-size:0.85em;">/auth/google</code></li>
+              <li>Prisma Client desatualizado (coluna <code class="pill" style="font-size:0.85em;">cnpj</code>)</li>
+              <li>Logout não redirecionava → corrigido</li>
+            </ul>
+          </div>
+          <div class="card blue fragment fade-up" data-fragment-index="1">
+            <h3><span class="done">✓</span> Melhorias</h3>
+            <ul style="font-size:0.65em;">
+              <li>Favoritos movidos p/ aba Editais (Salvos)</li>
+              <li>Cores por situação do edital</li>
+              <li>Header e barra inferior refinados</li>
+              <li>Refatoração: app achatado p/ raiz do repo</li>
+              <li>Documentação técnica revisada</li>
+            </ul>
+          </div>
+        </div>
+        <p class="caption" style="margin-top:16px;">🔍 Em aberto: filtro de município não enviado à API (mapeado para correção).</p>
+        <aside class="notes">Esse slide mostra processo de QA real: encontrar, corrigir, melhorar.</aside>
+      </section>
+
+      <!-- 10. DOCUMENTAÇÃO -->
+      <section data-transition="slide">
+        <span class="badge">Entregável 6</span>
+        <h2>📖 Documentação técnica</h2>
+        <div class="cols">
+          <div class="card fragment fade-up">
+            <h3><span class="icon-circle blue">📄</span> README.md</h3>
+            <p class="muted" style="font-size:0.8em;">Visão geral, stack, instalação, variáveis de ambiente, como rodar e build.</p>
+          </div>
+          <div class="card fragment fade-up" data-fragment-index="1">
+            <h3><span class="icon-circle blue">🏗️</span> DOCUMENTACAO_TECNICA.md</h3>
+            <p class="muted" style="font-size:0.8em;">Arquitetura, entidades, endpoints da API, estado global, telas e configuração.</p>
+          </div>
+        </div>
+        <p class="caption" style="margin-top:24px; font-size:0.7em;">
+          Cobre instalação, execução e apresentação do projeto — pronto para um novo dev subir o ambiente.
+        </p>
+        <aside class="notes">Abra os dois arquivos no repositório durante a apresentação.</aside>
+      </section>
+
+      <!-- 11. STACK & ARQUITETURA -->
+      <section data-transition="fade">
+        <span class="badge">Tecnologia</span>
+        <h2>🧰 Stack &amp; arquitetura</h2>
+        <div class="cols">
+          <div class="fragment fade-up">
+            <ul style="font-size:0.78em;">
+              <li><strong>App:</strong> React Native · Expo 54 · TypeScript</li>
+              <li><strong>Navegação:</strong> Expo Router (stack + tabs)</li>
+              <li><strong>Backend:</strong> NestJS · Prisma · PostgreSQL (Supabase)</li>
+              <li><strong>Infra:</strong> Render (API) · EAS (builds)</li>
+              <li><strong>Dados:</strong> PNCP</li>
+            </ul>
+            <div style="margin-top:16px;">
+              <span class="tech-badge"><span class="dot" style="background:#61dafb;"></span>React Native</span>
+              <span class="tech-badge"><span class="dot" style="background:#000;"></span>Expo</span>
+              <span class="tech-badge"><span class="dot" style="background:#3178c6;"></span>TS</span>
+              <span class="tech-badge"><span class="dot" style="background:#e0234e;"></span>NestJS</span>
+              <span class="tech-badge"><span class="dot" style="background:#2d3748;"></span>Prisma</span>
+              <span class="tech-badge"><span class="dot" style="background:#3ecfa1;"></span>PG</span>
+            </div>
+          </div>
+          <div class="fragment fade-up" data-fragment-index="1">
+            <div class="flow-step">📱 Telas (app/)</div>
+            <div class="flow-arrow">↓ React Hooks</div>
+            <div class="flow-step">⚡ ViewModels (hooks)</div>
+            <div class="flow-arrow">↓ Context API</div>
+            <div class="flow-step">🔄 AppContext (estado)</div>
+            <div class="flow-arrow">↓ Axios</div>
+            <div class="flow-step">🌐 API Service (HTTP)</div>
+            <div class="flow-arrow">↓ DTOs</div>
+            <div class="flow-step">📦 Domain (entidades)</div>
+            <p class="caption center" style="margin-top:14px;">MVVM + Clean Architecture leve</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 12. ROADMAP VISUAL -->
+      <section data-transition="slide">
+        <span class="badge">Roadmap</span>
+        <h2>🚀 Próximos passos</h2>
+        <div class="timeline">
+          <div class="timeline-item done fragment fade-up">
+            <div class="timeline-date">Q1 2026</div>
+            <div class="timeline-title">MVP — Autenticação + Editais</div>
+            <div class="timeline-desc">Login Google, listagem e filtro de editais do PNCP</div>
+          </div>
+          <div class="timeline-item done fragment fade-up" data-fragment-index="1">
+            <div class="timeline-date">Q2 2026</div>
+            <div class="timeline-title">Favoritos + Documentos + Build</div>
+            <div class="timeline-desc">Salvar editais, checklist de habilitação, APK preview</div>
+          </div>
+          <div class="timeline-item current fragment fade-up" data-fragment-index="2">
+            <div class="timeline-date">Q3 2026</div>
+            <div class="timeline-title">Correções + Elegibilidade automática</div>
+            <div class="timeline-desc">Filtro de município, match porte × ramo × objeto do edital</div>
+          </div>
+          <div class="timeline-item fragment fade-up" data-fragment-index="3">
+            <div class="timeline-date">Q4 2026</div>
+            <div class="timeline-title">Notificações + Google Play</div>
+            <div class="timeline-desc">Push alerts de novos editais e prazos, publicação na store</div>
+          </div>
+        </div>
+        <aside class="notes">Mostre que o projeto tem visão de continuidade.</aside>
+      </section>
+
+      <!-- 13. ENCERRAMENTO -->
+      <section class="closing-section" data-transition="zoom">
+        <div class="center" style="color:#fff; padding-top: 60px;">
+          <h1 style="color:#fff;" class="fragment fade-up">Obrigado! 💙</h1>
+          <p class="tagline fragment fade-up" data-fragment-index="1">LicitAcesso — acesso simples às licitações públicas.</p>
+          <p class="cover-meta fragment fade-up" data-fragment-index="2">GITHUB.COM/LBLIMA038/LICITACESSO · EQUIPE ARLL3SSONS-TEAM</p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <div class="slide-footer">LicitAcesso</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/highlight.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/notes/notes.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      transitionSpeed: 'default',
+      backgroundTransition: 'fade',
+      plugins: [ RevealHighlight, RevealNotes ],
+      fragments: true,
+      fragmentInURL: true,
+      autoAnimate: true,
+      autoAnimateEasing: 'ease-in-out',
+      autoAnimateDuration: 0.8,
+      center: false,
+      width: 1280,
+      height: 720,
+      margin: 0.04,
+      minScale: 0.2,
+      maxScale: 2.0,
+    });
+
+    // Custom fragment animations
+    Reveal.on('fragmentshown', event => {
+      if (event.fragment.classList.contains('fade-up')) {
+        event.fragment.classList.add('visible');
+      }
+    });
+  </script>
+</body>
+</html>

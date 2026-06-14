@@ -1,6 +1,6 @@
 import { Bid } from '../domain/entities';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://licitacessobackend.onrender.com';
 
 // ─── Auth CNPJ ────────────────────────────────────────────────────────────────
 
@@ -71,6 +71,7 @@ export async function fetchEditais(params: {
   data_fim?: string;
   ramo_mei?: string;
   situacao_nome?: string;
+  municipio_nome?: string;
   pagina?: number;
   tamanho?: number;
 }): Promise<EditaisResponse> {
@@ -79,6 +80,7 @@ export async function fetchEditais(params: {
   if (params.data_fim) p.set('data_fim', params.data_fim);
   if (params.ramo_mei) p.set('ramo_mei', params.ramo_mei);
   if (params.situacao_nome) p.set('situacao_nome', params.situacao_nome);
+  if (params.municipio_nome) p.set('municipio_nome', params.municipio_nome);
   if (params.pagina) p.set('pagina', String(params.pagina));
   if (params.tamanho) p.set('tamanho', String(params.tamanho));
   const res = await fetch(`${BASE_URL}/editais?${p}`);

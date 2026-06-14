@@ -1,6 +1,6 @@
 /**
- * presentation/components.tsx
- * Componentes reutilizáveis — versão React Native do LicitAcesso.
+ * presentation/components/cards.tsx
+ * Cards de conteúdo: estatísticas, editais, rankings + estados de lista.
  */
 import React, { useEffect, useRef } from 'react';
 import {
@@ -9,92 +9,14 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  ViewStyle,
-  TextStyle,
   Animated,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { router, usePathname } from 'expo-router';
-import { Bid } from '../domain/entities';
-import { useAppContext } from '../context/AppContext';
-
-// ─── Paleta de cores ──────────────────────────────────────────────────────────
-export const colors = {
-  primary: '#003d9b',
-  primaryDark: '#002a6b',
-  accent: '#0052cc',
-  green: '#006c47',
-  greenLight: '#8af5be',
-  orange: '#ffdcc3',
-  orangeDark: '#6a3600',
-  background: '#f8f9fb',
-  surface: '#ffffff',
-  surfaceAlt: '#f3f4f6',
-  border: '#e2e5ec',
-  text: '#191c1e',
-  textMuted: '#434654',
-  danger: '#ba1a1a',
-};
-
-// ─── Typography ───────────────────────────────────────────────────────────────
-export const typography = {
-  h1: { fontSize: 32, fontWeight: '800' as const, color: colors.primary },
-  h2: { fontSize: 22, fontWeight: '700' as const, color: colors.text },
-  h3: { fontSize: 18, fontWeight: '700' as const, color: colors.text },
-  body: { fontSize: 14, color: colors.textMuted, lineHeight: 22 },
-  label: { fontSize: 12, fontWeight: '700' as const, color: colors.textMuted },
-  tiny: { fontSize: 10, fontWeight: '700' as const, letterSpacing: 1 },
-};
-
-// ─── Button ───────────────────────────────────────────────────────────────────
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
-
-interface ButtonProps {
-  children: React.ReactNode;
-  onPress?: () => void;
-  variant?: ButtonVariant;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
-  disabled?: boolean;
-}
-
-const buttonVariants: Record<ButtonVariant, { container: ViewStyle; text: TextStyle }> = {
-  primary: {
-    container: { backgroundColor: colors.accent },
-    text: { color: '#fff' },
-  },
-  secondary: {
-    container: { backgroundColor: colors.greenLight },
-    text: { color: colors.green },
-  },
-  outline: {
-    container: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: '#737685' },
-    text: { color: colors.text },
-  },
-  ghost: {
-    container: { backgroundColor: 'transparent' },
-    text: { color: colors.accent },
-  },
-};
-
-export function Button({ children, onPress, variant = 'primary', style, textStyle, disabled }: ButtonProps) {
-  const v = buttonVariants[variant];
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled}
-      activeOpacity={0.75}
-      style={[styles.buttonBase, v.container, style, disabled && { opacity: 0.5 }]}
-    >
-      {typeof children === 'string' ? (
-        <Text style={[styles.buttonText, v.text, textStyle]}>{children}</Text>
-      ) : (
-        children
-      )}
-    </TouchableOpacity>
-  );
-}
+import { router } from 'expo-router';
+import { Bid } from '../../domain/entities';
+import { colors, typography } from '../theme';
+import { Button } from './Button';
+import { formatBRL } from './format';
 
 // ─── StatCard ─────────────────────────────────────────────────────────────────
 interface StatCardProps {
@@ -222,90 +144,6 @@ export function BidCardSkeleton() {
   );
 }
 
-// ─── BottomTabBar ─────────────────────────────────────────────────────────────
-interface TabItem {
-  route: string;
-  icon: React.ComponentProps<typeof Feather>['name'];
-  label: string;
-  hasBadge?: boolean;
-}
-
-const tabItems: TabItem[] = [
-  { route: '/(tabs)/dashboard', icon: 'home', label: 'Início' },
-  { route: '/(tabs)/editais', icon: 'search', label: 'Editais' },
-  { route: '/(tabs)/documents', icon: 'file-text', label: 'Docs' },
-  { route: '/(tabs)/alerts', icon: 'bell', label: 'Alertas', hasBadge: true },
-  { route: '/(tabs)/profile', icon: 'user', label: 'Perfil' },
-];
-
-export function BottomTabBar() {
-  const pathname = usePathname();
-  const insets = useSafeAreaInsets();
-  const { unreadAlerts } = useAppContext();
-
-  return (
-    <View style={[styles.tabBar, { bottom: insets.bottom + 12, paddingBottom: 10 }]}>
-      {tabItems.map(item => {
-        const isActive = pathname.startsWith(item.route.replace('/(tabs)', ''));
-        const showBadge = item.hasBadge && unreadAlerts > 0;
-        return (
-          <TouchableOpacity
-            key={item.route}
-            style={[styles.tabItem, isActive && styles.tabItemActive]}
-            onPress={() => router.push(item.route as any)}
-            activeOpacity={0.7}
-          >
-            <View style={{ position: 'relative' }}>
-              <Feather
-                name={item.icon}
-                size={20}
-                color={isActive ? '#fff' : `${colors.primary}80`}
-              />
-              {showBadge && (
-                <View style={styles.badgeDot}>
-                  <Text style={styles.badgeDotText}>
-                    {unreadAlerts > 9 ? '9+' : String(unreadAlerts)}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <Text style={[styles.tabLabel, isActive && { color: '#fff' }]}>
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
-// ─── TopBar ───────────────────────────────────────────────────────────────────
-export function TopBar() {
-  const insets = useSafeAreaInsets();
-
-  return (
-    <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-      <Text style={styles.topBarTitle}>LicitAcesso</Text>
-    </View>
-  );
-}
-
-// ─── ScreenLayout ─────────────────────────────────────────────────────────────
-interface ScreenLayoutProps {
-  children: React.ReactNode;
-  showNav?: boolean;
-}
-
-export function ScreenLayout({ children }: ScreenLayoutProps) {
-  return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <TopBar />
-      {children}
-      <BottomTabBar />
-    </View>
-  );
-}
-
 // ─── EditalCard ───────────────────────────────────────────────────────────────
 interface EditalItem {
   _id?: string;
@@ -367,7 +205,7 @@ export function EditalCard({ item, onPress, isFavorited, onToggleFavorite }: Edi
               activeOpacity={0.7}
             >
               <Feather
-                name={isFavorited ? 'bookmark' : 'bookmark'}
+                name="bookmark"
                 size={18}
                 color={isFavorited ? colors.accent : colors.border}
                 style={isFavorited ? { opacity: 1 } : { opacity: 0.5 }}
@@ -397,14 +235,6 @@ export function EditalCard({ item, onPress, isFavorited, onToggleFavorite }: Edi
       </View>
     </TouchableOpacity>
   );
-}
-
-// ─── formatBRL ────────────────────────────────────────────────────────────────
-export function formatBRL(value: number): string {
-  if (value >= 1_000_000_000) return `R$ ${(value / 1_000_000_000).toFixed(1)}B`;
-  if (value >= 1_000_000) return `R$ ${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `R$ ${(value / 1_000).toFixed(0)}K`;
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 // ─── EstadoCard ───────────────────────────────────────────────────────────────
@@ -471,22 +301,7 @@ export function AreaCard({ item, maxValor, rank }: { item: AreaItem; maxValor: n
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // Button
-  buttonBase: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
   // StatCard
   statCard: {
     backgroundColor: colors.surface,
@@ -509,7 +324,7 @@ const styles = StyleSheet.create({
   },
   statTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
   statSubtitle: { fontSize: 13, color: colors.textMuted },
-  // BidCard
+  // BidCard (+ Skeleton)
   bidCard: {
     backgroundColor: colors.surfaceAlt,
     borderRadius: 24,
@@ -544,6 +359,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   bidValue: { fontSize: 20, fontWeight: '800', color: colors.accent },
+  skeletonBlock: { backgroundColor: colors.border, borderRadius: 12 },
   // EmptyState
   emptyContainer: {
     alignItems: 'center',
@@ -562,85 +378,6 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 17, fontWeight: '700', color: colors.text, textAlign: 'center' },
   emptySubtitle: { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 22, paddingHorizontal: 20 },
-  // BidCardSkeleton
-  skeletonBlock: { backgroundColor: colors.border, borderRadius: 12 },
-  // TopBar
-  topBar: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    backgroundColor: `${colors.background}f0`,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  topBarTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.accent,
-    fontStyle: 'italic',
-  },
-  // BottomTabBar
-  tabBar: {
-    position: 'absolute',
-    bottom: 12,
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    borderRadius: 28,
-    paddingTop: 10,
-    paddingHorizontal: 8,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  tabItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 2,
-  },
-  tabItemActive: {
-    backgroundColor: colors.accent,
-    shadowColor: colors.accent,
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  tabLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    color: `${colors.primary}80`,
-  },
-  badgeDot: {
-    position: 'absolute',
-    top: -4,
-    right: -6,
-    backgroundColor: colors.danger,
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-    borderWidth: 1.5,
-    borderColor: '#fff',
-  },
-  badgeDotText: {
-    color: '#fff',
-    fontSize: 9,
-    fontWeight: '800',
-  },
   // EditalCard
   editalCard: {
     backgroundColor: colors.surface,
