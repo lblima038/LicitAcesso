@@ -114,6 +114,13 @@ export default function LoginScreen() {
           </Button>
         </View>
 
+        <Text style={styles.termsText}>
+          Ao entrar, você concorda com os{' '}
+          <Text style={styles.termsLink}>Termos de Uso</Text>
+          {' '}e a{' '}
+          <Text style={styles.termsLink}>Política de Privacidade</Text>.
+        </Text>
+
         <TouchableOpacity
           style={styles.devBtn}
           onPress={async () => {
@@ -168,6 +175,8 @@ const styles = StyleSheet.create({
   cnpjBtn: { width: '100%', paddingVertical: 16, borderRadius: 99, flexDirection: 'row', alignItems: 'center', gap: 12 },
   cnpjIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
   cnpjBtnText: { fontSize: 15, fontWeight: '700', color: colors.green },
+  termsText: { fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 18, paddingHorizontal: 8 },
+  termsLink: { color: colors.accent, fontWeight: '700' },
   devBtn: { alignItems: 'center', paddingVertical: 10 },
   devBtnText: { fontSize: 13, color: colors.textMuted, textDecorationLine: 'underline' },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 4 },
