@@ -9,9 +9,9 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, Button, ScreenLayout } from '../../src/presentation/components';
-import { useChecklistViewModel } from '../../src/presentation/viewmodels';
-import { DocumentStatus } from '../../src/domain/entities';
+import { colors, Button, ScreenLayout } from '@/src/presentation/components';
+import { useChecklistViewModel } from '@/src/presentation/viewmodels';
+import { DocumentStatus } from '@/src/domain/entities';
 
 export default function ChecklistScreen() {
   const { documents, progress, loading, error } = useChecklistViewModel('1');

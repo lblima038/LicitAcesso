@@ -73,15 +73,21 @@ npm run web        # Abre no browser
 npm run lint       # Linter Expo
 ```
 
+> ⚠️ O login Google usa um módulo nativo e **não funciona no Expo Go** (`npm start`).
+> Use um *development build* (`npm run android` / EAS) para testar a autenticação.
+
 ---
 
 ## 3. Estrutura de Pastas
 
+> O app vive na **raiz do repositório** (`LicitAcesso/`). Não há mais o nível
+> aninhado `LicitAcesso/licitacesso/`.
+
 ```
-licitacesso/
+LicitAcesso/                    # raiz do repositório (app na raiz)
 ├── app/                        # Rotas (Expo Router — file-based)
 │   ├── _layout.tsx             # Root layout (AppContextProvider)
-│   ├── index.tsx               # Redireciona para onboarding ou dashboard
+│   ├── index.tsx               # Redireciona para login ou dashboard (conforme sessão)
 │   ├── onboarding.tsx          # Tela de boas-vindas / login
 │   ├── error.tsx               # Boundary de erro global
 │   ├── profile.tsx             # Perfil do usuário
@@ -93,14 +99,14 @@ licitacesso/
 │   └── (tabs)/
 │       ├── _layout.tsx         # Layout com tabs (tabBar oculta — custom BottomTabBar)
 │       ├── dashboard.tsx       # Início: estatísticas e histórico
-│       ├── alerts.tsx          # Avisos · Favoritos · Calendário
+│       ├── alerts.tsx          # Avisos · Calendário
 │       ├── checklist.tsx       # Checklist de documentos MEI
 │       ├── documents.tsx       # Upload e gestão de documentos
 │       ├── chat.tsx            # Suporte / chat
 │       ├── profile.tsx         # Perfil (aba)
 │       └── editais/
 │           ├── _layout.tsx
-│           ├── index.tsx       # Lista de editais com filtros
+│           ├── index.tsx       # Lista de editais (Explorar / Salvos) + filtros
 │           └── [id].tsx        # Detalhe do edital + checklist inline
 │
 ├── src/
@@ -142,10 +148,11 @@ O roteamento é **file-based** via Expo Router 6. Cada arquivo em `app/` vira um
 index.tsx
   └── firebaseUser?
         ├── Sim → /(tabs)/dashboard
-        └── Não → /onboarding
+        └── Não → /(auth)/login
 
-/onboarding
+/onboarding · /(auth)/login
   └── Login bem-sucedido → /(tabs)/dashboard
+  (logout em Perfil → /(auth)/login)
 
 /(tabs) — BottomTabBar customizada com 5 abas:
   ├── /dashboard
@@ -182,7 +189,8 @@ O projeto segue uma arquitetura em camadas inspirada em **MVVM + Clean Architect
 ```
 Tela chama useXxxViewModel()
   └── ViewModel chama fetchXxx() de apiService
-        └── apiService faz fetch() para localhost:3000
+        └── apiService faz fetch() para o backend (Render em produção;
+            EXPO_PUBLIC_API_URL para apontar a outro host no dev)
               └── Resposta atualiza useState no ViewModel
                     └── Tela re-renderiza com dados novos
 ```
@@ -284,7 +292,11 @@ type ProposalStatus = 'em_andamento' | 'ganhou' | 'perdeu' | 'cancelado'
 ## 7. Camada de Dados — API Service
 
 **Arquivo:** `src/data/apiService.ts`  
-**Base URL:** `http://localhost:3000`
+**Base URL:** `https://licitacessobackend.onrender.com` (constante `BASE_URL` no arquivo).
+
+> As telas de login/cadastro e onboarding usam `EXPO_PUBLIC_API_URL` (com fallback
+> para a URL do Render) para permitir apontar a um backend local no dev. As demais
+> chamadas em `apiService.ts` usam a constante `BASE_URL` fixa.
 
 Todas as rotas protegidas recebem `Authorization: Bearer <token>` via `authHeaders(token)`.
 
@@ -595,7 +607,10 @@ Estado vazio com ícone, título e subtítulo.
 Barra de navegação inferior customizada com 5 abas: Início · Editais · Docs · Alertas · Perfil. Mostra badge de contagem nos alertas não lidos.
 
 #### `TopBar`
-Barra superior com logo, avatar do usuário e ícone de notificação.
+Barra superior minimalista: apenas o nome **LicitAcesso** centralizado. (Menu, avatar e sino foram removidos por serem redundantes com a `BottomTabBar`.)
+
+#### `situacaoStyle(nome?): { bg, fg }`
+Mapeia a situação do edital para cores do badge: divulgada → verde, suspensa → âmbar, revogada → vermelho, anulada → roxo, demais → azul. Usado em `EditalCard`, no detalhe e nos favoritos.
 
 #### `formatBRL(value: number): string`
 Formata valores monetários abreviados: `R$ 1.2M`, `R$ 450K`, etc.
@@ -608,7 +623,7 @@ Formata valores monetários abreviados: `R$ 1.2M`, `R$ 450K`, etc.
 Tela inicial de boas-vindas com login via Google e botão de entrada como CNPJ.
 
 ### `(auth)/login.tsx`
-Login com Google Sign-In. Após autenticação, troca o `idToken` do Firebase pelo JWT do backend via `POST /auth/firebase` e persiste o token no AppContext.
+Login com Google Sign-In (nativo via `@react-native-google-signin`). Após autenticação, troca o `idToken` do Google pelo JWT interno do backend via `POST /auth/google` (o backend valida o token em `GoogleAuthService`, conferindo o `audience` contra `GOOGLE_CLIENT_ID`) e persiste o token no AppContext.
 
 ### `(tabs)/dashboard.tsx`
 - Cards pessoais: total de participações, em andamento, ganhas, taxa de sucesso
@@ -617,13 +632,14 @@ Login com Google Sign-In. Após autenticação, troca o `idToken` do Firebase pe
 - Top 5 estados e áreas por volume
 
 ### `(tabs)/editais/index.tsx`
-Lista paginada com 4 filtros:
-- **Período:** chips 7d / 30d / 90d / 1 ano
-- **Situação:** chips dinâmicos do backend
-- **Ramo MEI:** chips dinâmicos do backend
-- **Município:** campo de texto com debounce 400ms
-
-Botão "Limpar filtros (N)" aparece quando há filtros ativos.
+Seletor no topo com duas seções:
+- **Explorar:** lista paginada com 4 filtros:
+  - **Período:** chips 7d / 30d / 90d / 1 ano
+  - **Situação:** chips dinâmicos do backend
+  - **Ramo MEI:** chips dinâmicos do backend
+  - **Município:** campo de texto com debounce 400ms
+  - Botão "Limpar filtros (N)" aparece quando há filtros ativos.
+- **Salvos:** editais favoritados (`favorites` do AppContext), com navegação para o detalhe e remoção pelo ícone de marcador. (Antes os favoritos ficavam na aba Alertas.)
 
 ### `(tabs)/editais/[id].tsx`
 Detalhe do edital com:
@@ -641,13 +657,14 @@ Checklist independente (bidId fixo `'1'`). Mostra progresso % e status de cada d
 - Modal de detalhes do documento
 
 ### `(tabs)/alerts.tsx`
-3 abas em segmento único:
+2 abas em segmento único:
 
 | Aba | Conteúdo |
 |-----|----------|
 | **Avisos** | Lista de alertas com tipos e leitura individual/coletiva |
-| **Favoritos** | Editais salvos com navegação para detalhe e remoção |
 | **Calendário** | Calendário mensal com marcadores de prazo; lista de prazos próximos |
+
+> Os **Favoritos** foram movidos para a aba **Editais → Salvos**.
 
 ### `(tabs)/dashboard.tsx` (proposals)
 Usa `proposals` do AppContext. Gráfico de barras de participações por mês. Lista dos últimos 5 com badge de status colorido.
@@ -699,13 +716,14 @@ Usa `proposals` do AppContext. Gráfico de barras de participações por mês. L
 ### Pré-requisitos
 
 - Node.js 18+
-- Expo CLI: `npm install -g expo-cli`
-- Backend NestJS rodando em `localhost:3000`
+- Expo via `npx expo` (não precisa instalar o `expo-cli` global, que está deprecado)
+- Para testar o **login Google nativo**: um *development build* (`npx expo run:android` ou EAS) — o módulo nativo **não funciona no Expo Go**
+- Backend NestJS rodando (local em `localhost:3000` ou o de produção no Render)
 
 ### Instalação
 
 ```bash
-cd LicitAcesso/licitacesso
+cd LicitAcesso
 npm install
 ```
 
@@ -727,14 +745,28 @@ npm run web
 
 ### Conexão com backend
 
-O `apiService.ts` aponta por padrão para `http://localhost:3000`.  
-Para testar em dispositivo físico, substitua `localhost` pelo IP da sua máquina na rede local:
+Em produção o app usa o backend no **Render** (`https://licitacessobackend.onrender.com`).
 
-```typescript
-// src/data/apiService.ts
-const BASE_URL = 'http://192.168.x.x:3000';
+Para apontar a um **backend local** no desenvolvimento, defina `EXPO_PUBLIC_API_URL`
+no `.env` (usado pelas telas de login/cadastro/onboarding):
+
+| Cenário | `EXPO_PUBLIC_API_URL` |
+|---------|------------------------|
+| Emulador Android | `http://10.0.2.2:3000` |
+| Celular físico (USB) | `http://localhost:3000` + `adb reverse tcp:3000 tcp:3000` |
+| Celular físico (Wi-Fi) | `http://SEU_IP:3000` (liberar a porta 3000 no firewall) |
+| Navegador (`--web`) | `http://localhost:3000` |
+
+> Variáveis `EXPO_PUBLIC_*` são embutidas no bundle — após alterar o `.env`,
+> reinicie com `npx expo start -c`.
+
+### Build (EAS)
+
+```bash
+cd LicitAcesso
+npx eas-cli build --platform android --profile preview   # APK interno
 ```
 
 ---
 
-*Documentação gerada em 04/06/2026*
+*Documentação revisada em 13/06/2026.*

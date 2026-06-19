@@ -2,18 +2,13 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import { AppContextProvider } from '../src/context/AppContext';
-
-const GOOGLE_WEB_CLIENT_ID = '386479303029-n20jbbhg3kkk2ihjb1jhlbiuld9on5rh.apps.googleusercontent.com';
+import { configureGoogleAuth } from '../src/data/authService';
 
 export default function RootLayout() {
   useEffect(() => {
-    if (Platform.OS === 'web') return;
-    try {
-      const { GoogleSignin } = require('@react-native-google-signin/google-signin');
-      GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
-    } catch {}
+    // Resolve a implementação certa por plataforma (nativa ou web) via Metro.
+    configureGoogleAuth();
   }, []);
 
   return (
